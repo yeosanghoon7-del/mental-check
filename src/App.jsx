@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
-import { ChevronRight, ChevronLeft, Check, Download, AlertCircle, RotateCcw, Trash2 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, Download, AlertCircle, RotateCcw, Trash2, Smartphone, X } from 'lucide-react';
 
 /* ============ Design tokens ============ */
 const C = {
@@ -308,9 +308,51 @@ export default function App() {
   const [adminLoading, setAdminLoading] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
 
+  // ===== 앱 설치(PWA) 관련 상태 =====
+  const [installPrompt, setInstallPrompt] = useState(null); // 안드로이드/데스크톱 크롬이 던져주는 설치 이벤트
+  const [isStandalone, setIsStandalone] = useState(false);  // 이미 앱으로 실행 중인지
+  const [isIOS, setIsIOS] = useState(false);                // iOS는 beforeinstallprompt를 지원 안 함
+  const [showIOSGuide, setShowIOSGuide] = useState(false);  // iOS용 수동 안내 팝업
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [screen]);
+
+  useEffect(() => {
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    setIsStandalone(standalone);
+
+    const ua = window.navigator.userAgent || '';
+    setIsIOS(/iphone|ipad|ipod/i.test(ua) && !window.MSStream);
+
+    const onBeforeInstall = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    const onInstalled = () => {
+      setInstallPrompt(null);
+      setIsStandalone(true);
+    };
+    window.addEventListener('beforeinstallprompt', onBeforeInstall);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onBeforeInstall);
+      window.removeEventListener('appinstalled', onInstalled);
+    };
+  }, []);
+
+  async function handleInstallClick() {
+    if (isIOS) {
+      setShowIOSGuide(true);
+      return;
+    }
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+  }
+
+  const showInstallButton = !isStandalone && (isIOS || !!installPrompt);
 
   function goToTops2() {
     if (!athlete.name.trim() || !athlete.org.trim() || !athlete.sport.trim()) {
@@ -433,6 +475,32 @@ export default function App() {
             )}
           </div>
         </div>
+
+        {showInstallButton && screen === 'intro' && (
+          <button
+            onClick={handleInstallClick}
+            className="w-full mt-2 mb-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 text-sm shadow-sm border"
+            style={{ background: C.card, borderColor: C.accent, color: C.accent }}
+          >
+            <Smartphone size={16} /> 홈 화면에 앱으로 설치하기
+          </button>
+        )}
+
+        {showIOSGuide && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowIOSGuide(false)}>
+            <div className="w-full max-w-lg bg-white rounded-t-2xl p-5 pb-8" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold" style={{ color: C.ink }}>iPhone에서 앱으로 설치하기</h3>
+                <button onClick={() => setShowIOSGuide(false)}><X size={18} style={{ color: C.inkDim }} /></button>
+              </div>
+              <ol className="text-sm leading-relaxed space-y-2" style={{ color: C.inkDim }}>
+                <li>1. Safari 하단(또는 상단)의 공유 버튼 <span style={{ fontWeight: 700 }}>⬆️</span>을 눌러요.</li>
+                <li>2. 메뉴를 아래로 내려 <span style={{ fontWeight: 700, color: C.ink }}>"홈 화면에 추가"</span>를 눌러요.</li>
+                <li>3. 오른쪽 위 <span style={{ fontWeight: 700, color: C.ink }}>"추가"</span>를 누르면 완료돼요.</li>
+              </ol>
+            </div>
+          </div>
+        )}
 
         <div className="pb-28 flex-1">
           {screen === 'intro' && (
