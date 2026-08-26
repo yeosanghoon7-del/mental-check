@@ -325,6 +325,7 @@ export default function App() {
   const [isStandalone, setIsStandalone] = useState(false);  // 이미 앱으로 실행 중인지
   const [isIOS, setIsIOS] = useState(false);                // iOS는 beforeinstallprompt를 지원 안 함
   const [showIOSGuide, setShowIOSGuide] = useState(false);  // iOS용 수동 안내 팝업
+  const [confirmGoIntro, setConfirmGoIntro] = useState(false); // 처음화면 이동 확인 팝업 (window.confirm 대신 자체 구현)
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -531,6 +532,31 @@ export default function App() {
           </div>
         )}
 
+        {confirmGoIntro && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setConfirmGoIntro(false)}>
+            <div className="w-full max-w-xs bg-white rounded-2xl p-5 text-center shadow-lg" onClick={(e) => e.stopPropagation()}>
+              <p className="text-sm font-bold mb-1" style={{ color: C.ink }}>처음 화면으로 돌아갈까요?</p>
+              <p className="text-xs leading-relaxed mb-4" style={{ color: C.inkDim }}>지금까지 답변은 그대로 저장돼요.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmGoIntro(false)}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold border"
+                  style={{ borderColor: C.line, color: C.inkDim, background: C.card }}
+                >
+                  취소
+                </button>
+                <button
+                  onClick={() => { setConfirmGoIntro(false); setScreen('intro'); }}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold"
+                  style={{ background: C.ink, color: '#FFF' }}
+                >
+                  확인
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="pb-28 flex-1">
           {screen === 'intro' && (
             <div className="pt-2">
@@ -548,6 +574,13 @@ export default function App() {
 
           {screen === 'tops2' && (
             <div>
+              <button
+                onClick={() => setConfirmGoIntro(true)}
+                className="w-full mb-3 py-2.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold border"
+                style={{ borderColor: C.line, background: C.card, color: C.inkDim }}
+              >
+                <ChevronLeft size={14} /> 처음 화면으로
+              </button>
               <p className="text-xs font-bold mb-3 font-mono text-center" style={{ color: C.accent }}>STEP 1 · TOPS2 수행전략검사 (28문항)</p>
               {TOPS2_ITEMS.map((it) => (
                 <LikertItem key={it.no} no={it.no} text={it.text} options={TOPS2_LIKERT} value={tops2Res[it.no]} onChange={(no, v) => setTops2Res((r) => ({ ...r, [no]: v }))} idPrefix="tops2" />
@@ -557,6 +590,22 @@ export default function App() {
 
           {screen === 'csai2' && (
             <div>
+              <div className="flex gap-2 mb-3">
+                <button
+                  onClick={() => setScreen('tops2')}
+                  className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold border"
+                  style={{ borderColor: C.line, background: C.card, color: C.ink }}
+                >
+                  <ChevronLeft size={14} /> 이전 문항으로 (TOPS2)
+                </button>
+                <button
+                  onClick={() => setConfirmGoIntro(true)}
+                  className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold border"
+                  style={{ borderColor: C.line, background: C.card, color: C.inkDim }}
+                >
+                  처음 화면으로
+                </button>
+              </div>
               <p className="text-xs font-bold mb-3 font-mono text-center" style={{ color: C.accent }}>STEP 2 · CSAI-2 경쟁상태불안 (27문항)</p>
               {CSAI2_ITEMS.map((it) => (
                 <LikertItem key={it.no} no={it.no} text={it.text} options={CSAI2_LIKERT} value={csai2Res[it.no]} onChange={(no, v) => setCsai2Res((r) => ({ ...r, [no]: v }))} idPrefix="csai2" />
