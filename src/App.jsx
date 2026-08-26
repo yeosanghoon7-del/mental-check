@@ -298,12 +298,24 @@ function ScoreRow({ name, raw, max, norm, def, high, low, tip, positive }) {
 
 /* ================= Main App ================= */
 export default function App() {
-  const [screen, setScreen] = useState('intro');
-  const [athlete, setAthlete] = useState({ name: '', org: '', sport: '' });
-  const [tops2Res, setTops2Res] = useState({});
-  const [csai2Res, setCsai2Res] = useState({});
+  // ===== 새로고침해도 진행 중이던 화면/응답이 유지되도록 처리 =====
+  const DRAFT_KEY = 'mc_draft_v1';
+  function loadDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+  const draft = loadDraft();
+
+  const [screen, setScreen] = useState(draft?.screen || 'intro');
+  const [athlete, setAthlete] = useState(draft?.athlete || { name: '', org: '', sport: '' });
+  const [tops2Res, setTops2Res] = useState(draft?.tops2Res || {});
+  const [csai2Res, setCsai2Res] = useState(draft?.csai2Res || {});
   const [errorMsg, setErrorMsg] = useState('');
-  const [savedEntry, setSavedEntry] = useState(null);
+  const [savedEntry, setSavedEntry] = useState(draft?.savedEntry || null);
   const [adminEntries, setAdminEntries] = useState([]);
   const [adminLoading, setAdminLoading] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -317,6 +329,14 @@ export default function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [screen]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ screen, athlete, tops2Res, csai2Res, savedEntry }));
+    } catch {
+      // 저장 실패는 무시 (용량 초과 등)
+    }
+  }, [screen, athlete, tops2Res, csai2Res, savedEntry]);
 
   useEffect(() => {
     const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -398,6 +418,15 @@ export default function App() {
     } catch (e) {}
     setSavedEntry(entry);
     setScreen('results');
+  }
+
+  function startNewTest() {
+    setAthlete({ name: '', org: '', sport: '' });
+    setTops2Res({});
+    setCsai2Res({});
+    setSavedEntry(null);
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+    setScreen('intro');
   }
 
   function loadAdmin() {
@@ -558,7 +587,7 @@ export default function App() {
                 ))}
               </div>
 
-              <button onClick={() => setScreen('intro')} className="w-full py-3.5 mt-6 rounded-xl border font-bold text-sm bg-white shadow-sm flex items-center justify-center gap-2">
+              <button onClick={startNewTest} className="w-full py-3.5 mt-6 rounded-xl border font-bold text-sm bg-white shadow-sm flex items-center justify-center gap-2">
                 <RotateCcw size={16} /> 새 검사 시작하기
               </button>
             </div>
