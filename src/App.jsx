@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
-import { ChevronRight, ChevronLeft, Check, Download, AlertCircle, RotateCcw, Trash2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, Download, AlertCircle, RotateCcw, Trash2 } from 'lucide-react';
 
 /* ============ Design tokens ============ */
 const C = {
@@ -55,14 +55,46 @@ const TOPS2_LIKERT = [
 ];
 
 const TOPS2_SUBSCALES = [
-  { key: 'selfTalk', name: '혼잣말', items: [1, 2, 3, 4], reverse: [], desc: '운동학습과 수행에 영향을 미치는 주된 심리기술 중 하나' },
-  { key: 'emotionControl', name: '감정조절', items: [5, 6, 7, 8], reverse: [5, 6, 7, 8], desc: '경기 전이나 중에 유발되는 감정을 조절하는 전략' },
-  { key: 'automaticity', name: '자동적수행', items: [9, 10, 11], reverse: [], desc: '주의를 거의 기울이지 않고도 성공적으로 수행하는 능력' },
-  { key: 'goalSetting', name: '목표설정', items: [12, 13, 14, 15], reverse: [], desc: '실제와 비슷한 감각·지각·감정을 지닌 목표 경험을 만들어 내는 것' },
-  { key: 'imagery', name: '심상', items: [16, 17, 18, 19], reverse: [], desc: '과거 경험과 기억을 바탕으로 실제 수행과 유사한 장면을 상상' },
-  { key: 'relaxation', name: '긴장풀기', items: [20, 21, 22, 23], reverse: [], desc: '어려운 상황에서 침착하고 편안하게 만드는 능력' },
-  { key: 'negativeThinking', name: '부정적생각', items: [24, 25], reverse: [], desc: '시합 중 실수나 부정적 장면이 떠오르는 정도' },
-  { key: 'distractibility', name: '주의산만', items: [26, 27, 28], reverse: [], desc: '시각적 방해요인이나 시합 환경 조건들에 의해 영향을 받는 것' },
+  { key: 'selfTalk', name: '혼잣말', items: [1, 2, 3, 4], reverse: [], positive: true,
+    def: '시합 수행에 도움이 되는 말을 스스로에게 건네는 심리기술.',
+    high: '과제 중심의 긍정적 혼잣말을 효과적으로 활용하고 있어요.',
+    low: '혼잣말을 거의 활용하지 못하거나, 활용해도 효과를 못 느끼고 있어요.',
+    tip: '시합 전 짧고 구체적인 격려·지시 문구(예: "짧고 강하게")를 미리 정해두고 훈련에서부터 반복해보세요.' },
+  { key: 'emotionControl', name: '감정조절', items: [5, 6, 7, 8], reverse: [5, 6, 7, 8], positive: true,
+    def: '경기 전이나 중에 유발되는 감정(부담·흥분·실수 후 동요)을 다스리는 능력.',
+    high: '압박이 큰 상황에서도 감정 기복 없이 평정심을 잘 유지해요.',
+    low: '부담이 크거나 실수를 하면 감정이 쉽게 흔들리는 편이에요.',
+    tip: '실수 직후 쓰는 짧은 리셋 루틴(호흡 1회 + 정해둔 동작)을 만들어 감정이 이어지지 않도록 끊어보세요.' },
+  { key: 'automaticity', name: '자동적수행', items: [9, 10, 11], reverse: [], positive: true,
+    def: '동작 하나하나에 의식적으로 신경 쓰지 않아도 기술이 자연스럽게 나오는 정도.',
+    high: '충분히 자동화되어 있어 실행 중 과도하게 생각하지 않고 몸이 알아서 반응해요.',
+    low: '동작마다 의식적으로 신경 써야 하거나, 생각이 많아져 동작이 끊기는 편이에요.',
+    tip: '지나치게 분석적으로 동작을 되짚기보다, 결과 이미지에만 집중하는 과제중심 연습을 반복해 절차기억을 강화해보세요.' },
+  { key: 'goalSetting', name: '목표설정', items: [12, 13, 14, 15], reverse: [], positive: true,
+    def: '시합을 위한 개인 목표를 구체적으로 세우고 달성 여부를 스스로 점검하는 습관.',
+    high: '세부적인 목표를 세우고 시합 후 달성 여부까지 평가하는 습관이 잡혀 있어요.',
+    low: '뚜렷한 목표 없이 즉흥적으로 시합에 임하는 경향이 있어요.',
+    tip: '결과(순위·기록)뿐 아니라 과정 목표(예: 특정 기술 성공률)를 함께 세우고, 시합 후 3줄 피드백을 남겨보세요.' },
+  { key: 'imagery', name: '심상', items: [16, 17, 18, 19], reverse: [], positive: true,
+    def: '실제 수행과 유사한 장면을 감각적으로 머릿속에 그려보는 기술(이미지 트레이닝).',
+    high: '시합 전 원하는 동작과 상황을 생생하게 상상하는 훈련이 잘 되어 있어요.',
+    low: '심상 훈련을 거의 활용하지 않거나 이미지가 잘 그려지지 않는 편이에요.',
+    tip: '훈련 전후 5분씩, 성공적인 수행 장면을 시각·촉각·소리까지 함께 떠올리는 연습을 루틴화해보세요.' },
+  { key: 'relaxation', name: '긴장풀기', items: [20, 21, 22, 23], reverse: [], positive: true,
+    def: '어려운 상황에서도 스스로를 침착하고 편안한 상태로 되돌리는 능력.',
+    high: '긴장이 높아져도 스스로 이완 상태로 전환하는 방법을 잘 알고 있어요.',
+    low: '한 번 긴장하면 스스로 풀기 어려워하는 편이에요.',
+    tip: '점진적 근육이완이나 4-4-8 호흡 같은 구체적 이완 루틴을 정해 시합 전 루틴에 포함시켜보세요.' },
+  { key: 'negativeThinking', name: '부정적생각', items: [24, 25], reverse: [], positive: false,
+    def: '시합 중 실수 장면이나 실패 이미지가 떠오르는 정도(점수가 낮을수록 좋음).',
+    high: '실수나 실패 장면이 자주 떠올라 수행에 방해가 될 수 있어요.',
+    low: '부정적인 이미지에 크게 휘둘리지 않는 편이에요.',
+    tip: '부정적 생각이 떠오르는 순간 알아차리고, 미리 정해둔 키워드나 동작으로 즉시 전환하는 "STOP-전환" 연습을 해보세요.' },
+  { key: 'distractibility', name: '주의산만', items: [26, 27, 28], reverse: [], positive: false,
+    def: '시각적 방해요인이나 시합 환경 조건(소음, 날씨 등)에 영향을 받는 정도(점수가 낮을수록 좋음).',
+    high: '외부 자극이나 환경 변화에 비교적 쉽게 흔들리는 편이에요.',
+    low: '외부 방해요인이 있어도 집중을 잘 유지하는 편이에요.',
+    tip: '훈련 중 일부러 소음이나 관중 등 방해 자극을 노출시켜, 그 상황에서도 루틴을 유지하는 연습을 해보세요.' },
 ];
 
 const CSAI2_ITEMS = [
@@ -103,9 +135,21 @@ const CSAI2_LIKERT = [
 ];
 
 const CSAI2_SUBSCALES = [
-  { key: 'cognitive', name: '인지적불안', items: [1, 4, 7, 10, 13, 16, 19, 22, 25], reverse: [], desc: '시합 결과나 실패에 대한 걱정, 부정적 기대 등 인지적 측면의 불안' },
-  { key: 'somatic', name: '신체적불안', items: [2, 5, 8, 11, 14, 17, 20, 23, 26], reverse: [14], desc: '심장박동, 긴장감, 손떨림 등 신체 각성과 관련된 불안 증상' },
-  { key: 'selfConfidence', name: '상태자신감', items: [3, 6, 9, 12, 15, 18, 21, 24, 27], reverse: [], desc: '시합 수행에 대해 스스로 느끼는 자신감의 정도' },
+  { key: 'cognitive', name: '인지적불안', items: [1, 4, 7, 10, 13, 16, 19, 22, 25], reverse: [], positive: false,
+    def: '시합 결과나 실패에 대한 걱정, 부정적 기대 등 생각 차원의 불안(점수가 낮을수록 좋음).',
+    high: '결과나 실패 가능성에 대한 걱정이 큰 편이에요.',
+    low: '결과에 대한 불필요한 걱정 없이 시합에 임하는 편이에요.',
+    tip: '결과가 아닌 과정 목표("이번 세트에 이 기술만 성공하자")로 초점을 좁히는 인지적 재구성 연습을 해보세요.' },
+  { key: 'somatic', name: '신체적불안', items: [2, 5, 8, 11, 14, 17, 20, 23, 26], reverse: [14], positive: false,
+    def: '심장박동, 근육 긴장, 손떨림 등 몸으로 나타나는 각성 증상(점수가 낮을수록 좋음).',
+    high: '시합 상황에서 신체적 긴장·각성 증상이 뚜렷하게 나타나는 편이에요.',
+    low: '신체적으로 비교적 편안한 상태를 유지하는 편이에요.',
+    tip: '호흡 조절과 점진적 근육이완을 시합 전 워밍업 루틴에 포함시켜 각성 수준을 미리 낮춰보세요.' },
+  { key: 'selfConfidence', name: '상태자신감', items: [3, 6, 9, 12, 15, 18, 21, 24, 27], reverse: [], positive: true,
+    def: '시합 수행에 대해 스스로 느끼는 자신감의 정도.',
+    high: '시합에 대처하고 잘 해낼 수 있다는 자신감이 높은 편이에요.',
+    low: '수행에 대한 의구심이 있거나 자신감이 낮은 편이에요.',
+    tip: '최근 성공했던 경험을 구체적으로 떠올리거나, 강점 리스트를 시합 전에 다시 읽는 루틴을 만들어보세요.' },
 ];
 
 /* ================= Helper Functions ================= */
@@ -225,20 +269,29 @@ function ScoreRadar({ data }) {
   );
 }
 
-/* 요인별 상세 설명 및 수치 카드 (복원) */
-function ScoreRow({ name, raw, max, norm, desc }) {
+function ScoreRow({ name, raw, max, norm, def, high, low, tip, positive }) {
+  const level = norm >= 60 ? 'high' : norm <= 40 ? 'low' : 'mid';
+  const levelText = level === 'high' ? high : level === 'low' ? low : '두드러지지 않은 보통 수준의 반응을 보여요.';
+  const levelColor = level === 'mid' ? C.inkDim : (level === 'high') === positive ? C.accent2 : C.accent;
   return (
     <div className="py-4 border-b last:border-b-0 text-center">
       <h3 className="text-base font-black mb-1" style={{ color: C.ink }}>{name}</h3>
-      <div className="mb-1.5">
+      <div className="mb-1">
         <span className="font-mono text-xl font-black" style={{ color: C.ink }}>{norm.toFixed(1)}</span>
         <span className="text-xs font-mono font-semibold" style={{ color: C.inkDim }}> / 100점</span>
+        <span className="ml-1.5 text-[10px] font-bold" style={{ color: C.inkDim }}>({positive ? '높을수록 좋음' : '낮을수록 좋음'})</span>
       </div>
-      {desc && <p className="text-xs font-medium leading-relaxed mb-2 px-2" style={{ color: C.inkDim }}>{desc}</p>}
+      {def && <p className="text-xs font-medium leading-relaxed mb-2 px-2" style={{ color: C.inkDim }}>{def}</p>}
       <div className="w-full h-2 rounded-full overflow-hidden mb-2 max-w-xs mx-auto" style={{ background: C.paperDim }}>
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.max(0, norm))}%`, background: C.accent }} />
       </div>
-      <p className="text-xs font-mono font-bold" style={{ color: C.inkDim }}>원점수 {raw} / {max}점</p>
+      <p className="text-xs font-mono font-bold mb-2" style={{ color: C.inkDim }}>원점수 {raw} / {max}점</p>
+      {levelText && (
+        <p className="text-xs font-bold leading-relaxed mb-2 px-2" style={{ color: levelColor }}>{levelText}</p>
+      )}
+      {tip && (
+        <p className="text-[11px] leading-relaxed px-3 py-2 rounded-lg mx-2" style={{ background: C.paperDim, color: C.inkDim }}>💡 {tip}</p>
+      )}
     </div>
   );
 }
@@ -300,9 +353,7 @@ export default function App() {
     };
     try {
       localStorage.setItem(`response:${entry.id}`, JSON.stringify(entry));
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
     setSavedEntry(entry);
     setScreen('results');
   }
@@ -333,9 +384,7 @@ export default function App() {
       const keys = Object.keys(localStorage).filter((k) => k.startsWith('response:'));
       keys.forEach((k) => localStorage.removeItem(k));
       setAdminEntries([]);
-    } catch {
-      // ignore
-    }
+    } catch {}
     setConfirmClear(false);
     setAdminLoading(false);
   }
@@ -369,8 +418,7 @@ export default function App() {
   return (
     <div className="min-h-screen w-full flex justify-center items-start font-sans antialiased" style={{ background: C.paper, color: C.ink }}>
       <div className="w-full max-w-lg mx-auto relative min-h-screen flex flex-col px-4 text-center">
-        
-        {/* 헤더 */}
+
         <div className="sticky top-0 z-10 py-3 border-b backdrop-blur-md mb-2 flex items-center justify-between" style={{ background: `${C.paper}F2`, borderColor: C.line }}>
           <div className="w-16"></div>
           <div className="text-center flex-1">
@@ -379,33 +427,24 @@ export default function App() {
           </div>
           <div className="w-16 text-right">
             {screen !== 'admin' && (
-              <button
-                onClick={goAdmin}
-                className="text-xs font-bold px-2.5 py-1.5 rounded-lg border bg-white shadow-sm whitespace-nowrap"
-                style={{ borderColor: C.line, color: C.inkDim }}
-              >
+              <button onClick={goAdmin} className="text-xs font-bold px-2.5 py-1.5 rounded-lg border bg-white shadow-sm whitespace-nowrap" style={{ borderColor: C.line, color: C.inkDim }}>
                 데이터 보기
               </button>
             )}
           </div>
         </div>
 
-        {/* 본문 */}
         <div className="pb-28 flex-1">
           {screen === 'intro' && (
             <div className="pt-2">
               <div className="p-5 rounded-2xl border shadow-sm mb-4" style={{ background: C.card, borderColor: C.line }}>
-                <h2 className="text-sm font-bold mb-4 pb-2 border-b text-center" style={{ color: C.ink, borderColor: C.line }}>
-                  피검사자 정보 입력
-                </h2>
+                <h2 className="text-sm font-bold mb-4 pb-2 border-b text-center" style={{ color: C.ink, borderColor: C.line }}>피검사자 정보 입력</h2>
                 <Field label="이름 또는 식별 코드" value={athlete.name} onChange={(v) => setAthlete((a) => ({ ...a, name: v }))} placeholder="예: 홍길동 또는 A-01" />
                 <Field label="소속 팀 / 학과" value={athlete.org} onChange={(v) => setAthlete((a) => ({ ...a, org: v }))} placeholder="예: OO대학교 / OO팀" />
                 <Field label="운동 종목" value={athlete.sport} onChange={(v) => setAthlete((a) => ({ ...a, sport: v }))} placeholder="예: 축구, 태권도 등" />
               </div>
-
               <div className="p-3.5 rounded-xl border text-xs leading-relaxed text-center" style={{ background: C.paperDim, borderColor: C.line, color: C.inkDim }}>
-                • 총 55문항 (TOPS2 28문항 + CSAI-2 27문항)<br />
-                • 소요시간: 약 10분 내외
+                • 총 55문항 (TOPS2 28문항 + CSAI-2 27문항)<br />• 소요시간: 약 10분 내외
               </div>
             </div>
           )}
@@ -439,7 +478,7 @@ export default function App() {
               <ScoreRadar data={tops2Merged.map((s) => ({ subject: s.name, value: Number(s.norm.toFixed(1)) }))} />
               <div className="rounded-2xl border p-2 mb-6 shadow-sm" style={{ background: C.card, borderColor: C.line }}>
                 {tops2Merged.map((s) => (
-                  <ScoreRow key={s.key} name={s.name} raw={s.raw} max={s.max} norm={s.norm} desc={s.desc} />
+                  <ScoreRow key={s.key} name={s.name} raw={s.raw} max={s.max} norm={s.norm} def={s.def} high={s.high} low={s.low} tip={s.tip} positive={s.positive} />
                 ))}
               </div>
 
@@ -447,7 +486,7 @@ export default function App() {
               <ScoreRadar data={csai2Merged.map((s) => ({ subject: s.name, value: Number(s.norm.toFixed(1)) }))} />
               <div className="rounded-2xl border p-2 shadow-sm" style={{ background: C.card, borderColor: C.line }}>
                 {csai2Merged.map((s) => (
-                  <ScoreRow key={s.key} name={s.name} raw={s.raw} max={s.max} norm={s.norm} desc={s.desc} />
+                  <ScoreRow key={s.key} name={s.name} raw={s.raw} max={s.max} norm={s.norm} def={s.def} high={s.high} low={s.low} tip={s.tip} positive={s.positive} />
                 ))}
               </div>
 
@@ -464,9 +503,7 @@ export default function App() {
               </button>
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-base font-bold" style={{ color: C.ink }}>내 기기 저장 데이터</h2>
-                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded" style={{ background: C.paperDim, color: C.inkDim }}>
-                  {adminEntries.length}건
-                </span>
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded" style={{ background: C.paperDim, color: C.inkDim }}>{adminEntries.length}건</span>
               </div>
 
               <div className="flex gap-2 mb-4">
@@ -474,8 +511,7 @@ export default function App() {
                   <Download size={15} /> CSV 다운로드
                 </button>
                 <button onClick={() => (confirmClear ? clearAll() : setConfirmClear(true))} disabled={!adminEntries.length} className="py-3 px-4 rounded-xl text-xs font-bold border disabled:opacity-40 flex items-center gap-1 shadow-sm" style={{ borderColor: confirmClear ? C.accent : C.line, color: confirmClear ? C.accent : C.inkDim, background: C.card }}>
-                  <Trash2 size={15} />
-                  {confirmClear ? '삭제 확인' : '전체 삭제'}
+                  <Trash2 size={15} />{confirmClear ? '삭제 확인' : '전체 삭제'}
                 </button>
               </div>
 
@@ -508,17 +544,18 @@ export default function App() {
                   </table>
                 </div>
               )}
+              {!adminLoading && !adminEntries.length && (
+                <p className="text-xs" style={{ color: C.inkDim }}>아직 저장된 응답이 없어요.</p>
+              )}
             </div>
           )}
         </div>
 
-        {/* 하단 버튼 */}
         <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center pointer-events-none">
           <div className="w-full max-w-lg px-4 pb-6 pt-3 pointer-events-auto" style={{ background: `linear-gradient(to top, ${C.paper} 90%, transparent)` }}>
             {errorMsg && (
               <div className="flex items-center justify-center gap-1.5 mb-2 text-xs font-bold p-2 rounded-lg border" style={{ color: C.accent, background: `${C.accent}10`, borderColor: `${C.accent}30` }}>
-                <AlertCircle size={14} />
-                <span>{errorMsg}</span>
+                <AlertCircle size={14} /><span>{errorMsg}</span>
               </div>
             )}
             {screen === 'intro' && (
