@@ -891,7 +891,9 @@ export default function App() {
       <div className="w-full max-w-lg mx-auto relative min-h-screen flex flex-col px-4 text-center">
 
         <div className="sticky top-0 z-10 py-3 border-b backdrop-blur-md mb-2 flex items-center justify-between" style={{ background: `${C.paper}F2`, borderColor: C.line }}>
-          <div className="w-16"></div>
+          <div className="w-16 flex items-center justify-start">
+            <img src="/계명대.jpg" alt="계명대학교" className="h-10 w-10 object-contain" />
+          </div>
           <div className="text-center flex-1">
             <p className="text-[10px] font-mono font-bold tracking-widest uppercase" style={{ color: C.accent }}>Mental Skills Check</p>
             <h1 className="text-lg font-black tracking-tight" style={{ color: C.ink }}>스포츠심리검사</h1>
@@ -1014,7 +1016,7 @@ export default function App() {
           {screen === 'results' && savedEntry && currentTest && (
             <div className="pt-2">
               <div className="p-4 rounded-xl border mb-4 text-center" style={{ background: C.card, borderColor: C.line }}>
-                <h2 className="text-base font-bold">{savedEntry.athlete.name} 선수 결과</h2>
+                <h2 className="text-base font-bold" style={{ color: C.ink }}>{savedEntry.athlete.name} 선수 결과</h2>
                 <p className="text-xs text-gray-500">{savedEntry.athlete.org} · {savedEntry.athlete.sport}</p>
               </div>
 
@@ -1184,7 +1186,7 @@ export default function App() {
                     <ChevronLeft size={14} /> 목록으로
                   </button>
                   <div className="p-4 rounded-xl border mb-4 text-center" style={{ background: C.card, borderColor: C.line }}>
-                    <h2 className="text-base font-bold">{adminRows[adminDetailIdx].name} 선수 결과</h2>
+                    <h2 className="text-base font-bold" style={{ color: C.ink }}>{adminRows[adminDetailIdx].name} 선수 결과</h2>
                     <p className="text-xs text-gray-500">{adminRows[adminDetailIdx].org} · {adminRows[adminDetailIdx].sport}</p>
                   </div>
                   <ResultsBlock
