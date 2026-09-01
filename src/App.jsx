@@ -813,11 +813,10 @@ export default function App() {
   }
 
   function startNewTest() {
-    setAthlete({ name: '', birth: '', org: '', sport: '' });
+    // 피검사자 정보는 남겨둔다 — 같은 사람이 이어서 다른 검사를 볼 수 있게.
     setSelectedTestId(null);
     setResponses({});
     setSavedEntry(null);
-    try { localStorage.removeItem(DRAFT_KEY); } catch {}
     setScreen('intro');
   }
 
