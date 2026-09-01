@@ -4,21 +4,18 @@ const ADMIN_PASSWORD_PROP = 'ADMIN_PASSWORD';
 // 그래야 구글시트를 직접 열었을 때도 검사별로 결과가 분리되어, 하위척도 원점수가 컬럼으로 바로 보인다.
 // scores_json/responses_json은 앱 자체(조회·상세보기 등)가 다시 읽어들이기 위한 원본 데이터라
 // 사람이 직접 보라고 있는 컬럼은 아니다.
-const FIXED_HEADERS = ['id', 'timestamp', 'testId', 'testName', 'name', 'birth', 'org', 'sport'];
+const FIXED_HEADERS = ['id', 'timestamp', 'testId', 'testName', 'name', 'phone4', 'org', 'sport'];
 const TRAILING_HEADERS = ['scores_json', 'responses_json'];
 
 function jsonOut_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
-// 구글시트가 "생년월일" 같은 날짜 형식 문자열을 자동으로 Date 타입으로 바꿔버리는 경우가 있어서,
-// instanceof Date 대신 duck-typing으로 안전하게 감지해 항상 'yyyy-MM-dd' 문자열로 통일한다.
-function normalizeBirth_(v) {
+// 휴대폰 뒷자리(예: "0234")를 구글시트가 숫자로 인식해 앞자리 0을 지워버리는 경우가 있어서,
+// 다시 읽어올 때 숫자 타입이면 4자리로 0을 채워 문자열로 복원한다.
+function normalizePhone4_(v) {
   if (v === '' || v === null || v === undefined) return '';
-  const isDateLike = typeof v === 'object' && typeof v.getTime === 'function' && !isNaN(v.getTime());
-  if (isDateLike) {
-    return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
-  }
+  if (typeof v === 'number') return String(v).padStart(4, '0');
   return String(v).trim();
 }
 
@@ -48,7 +45,7 @@ function readRowsFromSheet_(sheet) {
   return values.slice(1).map((row) => {
     const obj = {};
     headers.forEach((h, i) => { obj[h] = row[i]; });
-    obj.birth = normalizeBirth_(obj.birth);
+    obj.phone4 = normalizePhone4_(obj.phone4);
     return obj;
   });
 }
@@ -70,19 +67,22 @@ function handleSubmit_(body) {
 
   const sheet = getOrCreateTestSheet_(entry.testId, entry.testName, scores);
   sheet.appendRow(
-    [entry.id, entry.timestamp, entry.testId, entry.testName, athlete.name, athlete.birth, athlete.org, athlete.sport]
+    [entry.id, entry.timestamp, entry.testId, entry.testName, athlete.name, athlete.phone4, athlete.org, athlete.sport]
       .concat(scores.map((s) => s.raw))
       .concat([JSON.stringify(scores), JSON.stringify(entry.responses || {})])
   );
+  // 응답을 돌려주기 전에 시트 쓰기를 확정한다.
+  // (없으면 "저장 완료" 응답 이후 바로 조회했을 때 아직 안 써진 것처럼 보이는 경우가 있었음)
+  SpreadsheetApp.flush();
   return jsonOut_({ ok: true });
 }
 
 function handleLookup_(body) {
   const name = String(body.name || '').trim();
-  const birth = String(body.birth || '').trim();
-  if (!name || !birth) return jsonOut_({ ok: false, error: 'missing name/birth' });
+  const phone4 = String(body.phone4 || '').trim();
+  if (!name || !phone4) return jsonOut_({ ok: false, error: 'missing name/phone4' });
 
-  const rows = readAllRows_().filter((r) => String(r.name).trim() === name && r.birth === birth);
+  const rows = readAllRows_().filter((r) => String(r.name).trim() === name && r.phone4 === phone4);
   return jsonOut_({ ok: true, rows });
 }
 

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
-import { ChevronRight, ChevronLeft, Check, Download, AlertCircle, RotateCcw, Smartphone, X, Lock, Search, User, Clock } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, Download, AlertCircle, RotateCcw, Smartphone, X, Lock, Search, User, Clock, Image } from 'lucide-react';
 
 /* ============ Design tokens ============ */
 const C = {
@@ -465,6 +466,11 @@ function makeId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+// 휴대폰 뒷자리 입력칸: 숫자만, 4자리까지만 남긴다.
+function sanitizePhone4(v) {
+  return v.replace(/\D/g, '').slice(0, 4);
+}
+
 function toCSV(rows) {
   if (!rows.length) return '';
   const headerSet = new Set();
@@ -505,25 +511,35 @@ async function callScript(payload) {
 }
 
 // 제출은 결과를 못 읽어도 상관없으므로 실패해도 검사 흐름을 막지 않음
-function syncToSheet(entry) {
+async function syncToSheet(entry, attempt = 1) {
   if (!GOOGLE_SCRIPT_URL) return;
-  fetch(GOOGLE_SCRIPT_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({
-      action: 'submit',
-      entry: {
-        id: entry.id,
-        timestamp: entry.timestamp,
-        testId: entry.testId,
-        testName: entry.testName,
-        athlete: entry.athlete,
-        scores: entry.scores,
-        responses: entry.responses,
-      },
-    }),
-  }).catch(() => {});
+  const payload = {
+    action: 'submit',
+    entry: {
+      id: entry.id,
+      timestamp: entry.timestamp,
+      testId: entry.testId,
+      testName: entry.testName,
+      athlete: entry.athlete,
+      scores: entry.scores,
+      responses: entry.responses,
+    },
+  };
+  try {
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'sync failed');
+  } catch (e) {
+    // 응답을 못 읽거나(no-cors류 네트워크 이슈) 실패로 확인되면 잠깐 쉬었다가 재시도한다.
+    if (attempt < 3) {
+      await new Promise((r) => setTimeout(r, attempt * 1000));
+      return syncToSheet(entry, attempt + 1);
+    }
+  }
 }
 
 /* ================= UI Components ================= */
@@ -682,7 +698,7 @@ export default function App() {
   // ===== 새로고침해도 진행 중이던 화면/응답이 유지되도록 처리 =====
   const DRAFT_KEY = 'mc_draft_v2';
   // 결과조회/관리자 화면은 개인정보가 뜬 채로 남을 수 있어 새로고침 시 복원 대상에서 제외
-  const RESTORABLE_SCREENS = ['intro', 'quiz', 'results'];
+  const RESTORABLE_SCREENS = ['intro', 'quiz', 'athleteInfo', 'results'];
   function loadDraft() {
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
@@ -694,7 +710,7 @@ export default function App() {
   const draft = loadDraft();
 
   const [screen, setScreen] = useState(RESTORABLE_SCREENS.includes(draft?.screen) ? draft.screen : 'intro');
-  const [athlete, setAthlete] = useState(draft?.athlete || { name: '', birth: '', org: '', sport: '' });
+  const [athlete, setAthlete] = useState(draft?.athlete || { name: '', phone4: '', org: '', sport: '' });
   const [selectedTestId, setSelectedTestId] = useState(draft?.selectedTestId || null);
   const [responses, setResponses] = useState(draft?.responses || {});
   const [errorMsg, setErrorMsg] = useState('');
@@ -702,7 +718,7 @@ export default function App() {
 
   // ===== 선수 본인 결과 조회(비밀번호 없음) =====
   const [lookupName, setLookupName] = useState('');
-  const [lookupBirth, setLookupBirth] = useState('');
+  const [lookupPhone4, setLookupPhone4] = useState('');
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState('');
   const [lookupRows, setLookupRows] = useState(null);
@@ -714,6 +730,12 @@ export default function App() {
   const [adminError, setAdminError] = useState('');
   const [adminRows, setAdminRows] = useState(null);
   const [adminDetailIdx, setAdminDetailIdx] = useState(null);
+
+  // ===== 결과를 이미지로 저장 =====
+  const resultsCaptureRef = useRef(null);
+  const lookupCaptureRef = useRef(null);
+  const adminCaptureRef = useRef(null);
+  const [savingImage, setSavingImage] = useState(false);
 
   // ===== 앱 설치(PWA) 관련 상태 =====
   const [installPrompt, setInstallPrompt] = useState(null); // 안드로이드/데스크톱 크롬이 던져주는 설치 이벤트
@@ -773,24 +795,33 @@ export default function App() {
   const showInstallButton = !isStandalone && (isIOS || !!installPrompt);
 
   function startTest(testId) {
-    if (!athlete.name.trim() || !athlete.birth.trim() || !athlete.org.trim() || !athlete.sport.trim()) {
-      setErrorMsg('이름, 생년월일, 소속, 종목을 모두 입력해주세요.');
-      window.scrollTo(0, 0);
-      return;
-    }
     setErrorMsg('');
     setSelectedTestId(testId);
     setResponses({});
     setScreen('quiz');
   }
 
-  function submitTest() {
+  function goToAthleteInfo() {
     if (!currentTest) return;
     const missing = validateAnswers(currentTest.items, responses);
     if (missing.length) {
       setErrorMsg(`미응답 문항이 있습니다 (${missing[0]}번 확인).`);
       const el = document.getElementById(`quiz-item-${missing[0]}`);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    setErrorMsg('');
+    setScreen('athleteInfo');
+  }
+
+  function submitTest() {
+    if (!currentTest) return;
+    if (!athlete.name.trim() || !athlete.org.trim() || !athlete.sport.trim()) {
+      setErrorMsg('이름, 휴대폰 번호 뒷자리, 소속, 종목을 모두 입력해주세요.');
+      return;
+    }
+    if (!/^\d{4}$/.test(athlete.phone4)) {
+      setErrorMsg('휴대폰 번호 뒷자리 4자리를 숫자로 입력해주세요.');
       return;
     }
     setErrorMsg('');
@@ -825,17 +856,17 @@ export default function App() {
   }
 
   async function doLookup() {
-    if (!lookupName.trim() || !lookupBirth.trim()) {
-      setLookupError('이름과 생년월일을 입력해주세요.');
+    if (!lookupName.trim() || !/^\d{4}$/.test(lookupPhone4)) {
+      setLookupError('이름과 휴대폰 번호 뒷자리 4자리를 입력해주세요.');
       return;
     }
     setLookupLoading(true);
     setLookupError('');
     setLookupDetailIdx(null);
     try {
-      const data = await callScript({ action: 'lookup', name: lookupName.trim(), birth: lookupBirth.trim() });
+      const data = await callScript({ action: 'lookup', name: lookupName.trim(), phone4: lookupPhone4 });
       const rows = (data.rows || []).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-      if (!rows.length) setLookupError('일치하는 결과가 없어요. 이름/생년월일을 확인해주세요.');
+      if (!rows.length) setLookupError('일치하는 결과가 없어요. 이름/휴대폰 번호 뒷자리를 확인해주세요.');
       setLookupRows(rows);
     } catch (e) {
       setLookupError(e.message || '조회 중 오류가 발생했어요.');
@@ -872,7 +903,7 @@ export default function App() {
         시간: new Date(r.timestamp).toLocaleString('ko-KR'),
         검사명: r.testName,
         이름: r.name,
-        생년월일: r.birth,
+        휴대폰뒷자리: r.phone4,
         소속: r.org,
         종목: r.sport,
       };
@@ -880,6 +911,25 @@ export default function App() {
       return row;
     });
     downloadCSV(`sports_psych_data_${Date.now()}.csv`, toCSV(rows));
+  }
+
+  async function saveAsImage(ref, filename) {
+    if (!ref.current || savingImage) return;
+    setSavingImage(true);
+    try {
+      const canvas = await html2canvas(ref.current, { backgroundColor: C.paper, scale: 2 });
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      setErrorMsg('이미지 저장에 실패했어요.');
+    } finally {
+      setSavingImage(false);
+    }
   }
 
   const resultsMerged = savedEntry && currentTest
@@ -961,14 +1011,6 @@ export default function App() {
         <div className="pb-28 flex-1">
           {screen === 'intro' && (
             <div className="pt-2">
-              <div className="p-5 rounded-2xl border shadow-sm mb-4" style={{ background: C.card, borderColor: C.line }}>
-                <h2 className="text-sm font-bold mb-4 pb-2 border-b text-center" style={{ color: C.ink, borderColor: C.line }}>피검사자 정보 입력</h2>
-                <Field label="이름" value={athlete.name} onChange={(v) => setAthlete((a) => ({ ...a, name: v }))} placeholder="예: 홍길동" />
-                <Field label="생년월일" type="date" value={athlete.birth} onChange={(v) => setAthlete((a) => ({ ...a, birth: v }))} />
-                <Field label="소속 팀 / 학과" value={athlete.org} onChange={(v) => setAthlete((a) => ({ ...a, org: v }))} placeholder="예: OO대학교 / OO팀" />
-                <Field label="운동 종목" value={athlete.sport} onChange={(v) => setAthlete((a) => ({ ...a, sport: v }))} placeholder="예: 축구, 태권도 등" />
-              </div>
-
               <p className="text-xs font-bold mb-3 px-1 text-left" style={{ color: C.inkDim }}>실시할 검사를 선택하세요</p>
               {TESTS.map((t) => (
                 <button
@@ -1013,16 +1055,46 @@ export default function App() {
             </div>
           )}
 
+          {screen === 'athleteInfo' && currentTest && (
+            <div className="pt-2">
+              <button
+                onClick={() => setScreen('quiz')}
+                className="w-full mb-3 py-2.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold border"
+                style={{ borderColor: C.line, background: C.card, color: C.inkDim }}
+              >
+                <ChevronLeft size={14} /> 답변 수정하기
+              </button>
+              <p className="text-xs font-bold mb-4 font-mono text-center" style={{ color: C.accent }}>{currentTest.name} · 마지막 단계</p>
+              <div className="p-5 rounded-2xl border shadow-sm mb-4" style={{ background: C.card, borderColor: C.line }}>
+                <h2 className="text-sm font-bold mb-4 pb-2 border-b text-center" style={{ color: C.ink, borderColor: C.line }}>피검사자 정보 입력</h2>
+                <Field label="이름" value={athlete.name} onChange={(v) => setAthlete((a) => ({ ...a, name: v }))} placeholder="예: 홍길동" />
+                <Field label="휴대폰 번호 뒷자리 4자리" type="tel" value={athlete.phone4} onChange={(v) => setAthlete((a) => ({ ...a, phone4: sanitizePhone4(v) }))} placeholder="예: 1234" />
+                <Field label="소속 팀 / 학과" value={athlete.org} onChange={(v) => setAthlete((a) => ({ ...a, org: v }))} placeholder="예: OO대학교 / OO팀" />
+                <Field label="운동 종목" value={athlete.sport} onChange={(v) => setAthlete((a) => ({ ...a, sport: v }))} placeholder="예: 축구, 태권도 등" />
+              </div>
+              <p className="text-xs leading-relaxed px-2" style={{ color: C.inkDim }}>이름·휴대폰 번호 뒷자리는 나중에 본인 결과를 다시 조회할 때 필요해요.</p>
+            </div>
+          )}
+
           {screen === 'results' && savedEntry && currentTest && (
             <div className="pt-2">
-              <div className="p-4 rounded-xl border mb-4 text-center" style={{ background: C.card, borderColor: C.line }}>
-                <h2 className="text-base font-bold" style={{ color: C.ink }}>{savedEntry.athlete.name} 선수 결과</h2>
-                <p className="text-xs text-gray-500">{savedEntry.athlete.org} · {savedEntry.athlete.sport}</p>
+              <div ref={resultsCaptureRef} style={{ background: C.paper }}>
+                <div className="p-4 rounded-xl border mb-4 text-center" style={{ background: C.card, borderColor: C.line }}>
+                  <h2 className="text-base font-bold" style={{ color: C.ink }}>{savedEntry.athlete.name} 선수 결과</h2>
+                  <p className="text-xs text-gray-500">{savedEntry.athlete.org} · {savedEntry.athlete.sport}</p>
+                </div>
+
+                <ResultsBlock title={currentTest.name} merged={resultsMerged} />
               </div>
 
-              <ResultsBlock title={currentTest.name} merged={resultsMerged} />
-
-              <button onClick={startNewTest} className="w-full py-3.5 mt-6 rounded-xl border font-bold text-sm bg-white shadow-sm flex items-center justify-center gap-2">
+              <button
+                onClick={() => saveAsImage(resultsCaptureRef, `${savedEntry.athlete.name}_${currentTest.name}_결과.png`)}
+                disabled={savingImage}
+                className="w-full py-3.5 mt-6 rounded-xl border font-bold text-sm bg-white shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <Image size={16} /> {savingImage ? '저장 중...' : '결과 이미지로 저장'}
+              </button>
+              <button onClick={startNewTest} className="w-full py-3.5 mt-2 rounded-xl border font-bold text-sm bg-white shadow-sm flex items-center justify-center gap-2">
                 <RotateCcw size={16} /> 새 검사 시작하기
               </button>
             </div>
@@ -1043,7 +1115,7 @@ export default function App() {
                 <div className="p-2.5 rounded-xl" style={{ background: C.paperDim }}><User size={20} style={{ color: C.accent2 }} /></div>
                 <div>
                   <p className="text-sm font-bold" style={{ color: C.ink }}>내 결과 조회</p>
-                  <p className="text-xs" style={{ color: C.inkDim }}>이름 + 생년월일로 내 검사 기록을 확인해요. 비밀번호 필요 없음.</p>
+                  <p className="text-xs" style={{ color: C.inkDim }}>이름 + 휴대폰 번호 뒷자리로 내 검사 기록을 확인해요. 비밀번호 필요 없음.</p>
                 </div>
               </button>
 
@@ -1070,7 +1142,7 @@ export default function App() {
               {lookupDetailIdx === null && (
                 <div className="p-5 rounded-2xl border shadow-sm mb-4" style={{ background: C.card, borderColor: C.line }}>
                   <Field label="이름" value={lookupName} onChange={setLookupName} placeholder="검사 때 입력한 이름" />
-                  <Field label="생년월일" type="date" value={lookupBirth} onChange={setLookupBirth} />
+                  <Field label="휴대폰 번호 뒷자리 4자리" type="tel" value={lookupPhone4} onChange={(v) => setLookupPhone4(sanitizePhone4(v))} placeholder="예: 1234" />
                   <button onClick={doLookup} disabled={lookupLoading} className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-50" style={{ background: C.ink, color: '#FFF' }}>
                     <Search size={16} /> {lookupLoading ? '조회 중...' : '조회하기'}
                   </button>
@@ -1115,10 +1187,26 @@ export default function App() {
                   <button onClick={() => setLookupDetailIdx(null)} className="text-xs font-bold mb-4 flex items-center gap-1 mx-auto" style={{ color: C.inkDim }}>
                     <ChevronLeft size={14} /> 목록으로
                   </button>
-                  <ResultsBlock
-                    title={lookupRows[lookupDetailIdx].testName}
-                    merged={mergeStoredScores(getTestById(lookupRows[lookupDetailIdx].testId), safeParseScores(lookupRows[lookupDetailIdx].scores_json))}
-                  />
+                  <div ref={lookupCaptureRef} style={{ background: C.paper }}>
+                    <div className="p-4 rounded-xl border mb-4 text-center" style={{ background: C.card, borderColor: C.line }}>
+                      <h2 className="text-base font-bold" style={{ color: C.ink }}>{lookupName} 선수 결과</h2>
+                      <p className="text-xs text-gray-500">
+                        {new Date(lookupRows[lookupDetailIdx].timestamp).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                        {' · '}{lookupRows[lookupDetailIdx].org} · {lookupRows[lookupDetailIdx].sport}
+                      </p>
+                    </div>
+                    <ResultsBlock
+                      title={lookupRows[lookupDetailIdx].testName}
+                      merged={mergeStoredScores(getTestById(lookupRows[lookupDetailIdx].testId), safeParseScores(lookupRows[lookupDetailIdx].scores_json))}
+                    />
+                  </div>
+                  <button
+                    onClick={() => saveAsImage(lookupCaptureRef, `${lookupName}_${lookupRows[lookupDetailIdx].testName}_결과.png`)}
+                    disabled={savingImage}
+                    className="w-full py-3.5 mt-4 rounded-xl border font-bold text-sm bg-white shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <Image size={16} /> {savingImage ? '저장 중...' : '결과 이미지로 저장'}
+                  </button>
                 </div>
               )}
             </div>
@@ -1155,7 +1243,7 @@ export default function App() {
                       <table className="text-xs font-mono border-collapse w-full" style={{ minWidth: 560 }}>
                         <thead>
                           <tr className="border-b" style={{ borderColor: C.line }}>
-                            {['시간', '검사명', '이름', '생년월일', '소속', '종목', ''].map((h) => (
+                            {['시간', '검사명', '이름', '휴대폰뒷자리', '소속', '종목', ''].map((h) => (
                               <th key={h} className="text-left py-2.5 pr-3 font-bold whitespace-nowrap" style={{ color: C.inkDim }}>{h}</th>
                             ))}
                           </tr>
@@ -1166,7 +1254,7 @@ export default function App() {
                               <td className="py-2.5 pr-3 whitespace-nowrap font-medium" style={{ color: C.ink }}>{new Date(r.timestamp).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
                               <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.testName}</td>
                               <td className="py-2.5 pr-3 whitespace-nowrap font-bold" style={{ color: C.ink }}>{r.name}</td>
-                              <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.birth}</td>
+                              <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.phone4}</td>
                               <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.org}</td>
                               <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.sport}</td>
                               <td className="py-2.5 pr-3"><ChevronRight size={14} style={{ color: C.inkDim }} /></td>
@@ -1185,14 +1273,23 @@ export default function App() {
                   <button onClick={() => setAdminDetailIdx(null)} className="text-xs font-bold mb-4 flex items-center gap-1 mx-auto" style={{ color: C.inkDim }}>
                     <ChevronLeft size={14} /> 목록으로
                   </button>
-                  <div className="p-4 rounded-xl border mb-4 text-center" style={{ background: C.card, borderColor: C.line }}>
-                    <h2 className="text-base font-bold" style={{ color: C.ink }}>{adminRows[adminDetailIdx].name} 선수 결과</h2>
-                    <p className="text-xs text-gray-500">{adminRows[adminDetailIdx].org} · {adminRows[adminDetailIdx].sport}</p>
+                  <div ref={adminCaptureRef} style={{ background: C.paper }}>
+                    <div className="p-4 rounded-xl border mb-4 text-center" style={{ background: C.card, borderColor: C.line }}>
+                      <h2 className="text-base font-bold" style={{ color: C.ink }}>{adminRows[adminDetailIdx].name} 선수 결과</h2>
+                      <p className="text-xs text-gray-500">{adminRows[adminDetailIdx].org} · {adminRows[adminDetailIdx].sport}</p>
+                    </div>
+                    <ResultsBlock
+                      title={adminRows[adminDetailIdx].testName}
+                      merged={mergeStoredScores(getTestById(adminRows[adminDetailIdx].testId), safeParseScores(adminRows[adminDetailIdx].scores_json))}
+                    />
                   </div>
-                  <ResultsBlock
-                    title={adminRows[adminDetailIdx].testName}
-                    merged={mergeStoredScores(getTestById(adminRows[adminDetailIdx].testId), safeParseScores(adminRows[adminDetailIdx].scores_json))}
-                  />
+                  <button
+                    onClick={() => saveAsImage(adminCaptureRef, `${adminRows[adminDetailIdx].name}_${adminRows[adminDetailIdx].testName}_결과.png`)}
+                    disabled={savingImage}
+                    className="w-full py-3.5 mt-4 rounded-xl border font-bold text-sm bg-white shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <Image size={16} /> {savingImage ? '저장 중...' : '결과 이미지로 저장'}
+                  </button>
                 </div>
               )}
             </div>
@@ -1207,6 +1304,11 @@ export default function App() {
               </div>
             )}
             {screen === 'quiz' && (
+              <button onClick={goToAthleteInfo} className="w-full py-4 rounded-xl font-bold flex items-center justify-center gap-1 text-base shadow-md" style={{ background: C.ink, color: '#FFF' }}>
+                다음 <ChevronRight size={18} />
+              </button>
+            )}
+            {screen === 'athleteInfo' && (
               <button onClick={submitTest} className="w-full py-4 rounded-xl font-bold flex items-center justify-center gap-1 text-base shadow-md" style={{ background: C.accent, color: '#FFF' }}>
                 제출하고 결과 보기 <Check size={18} />
               </button>
