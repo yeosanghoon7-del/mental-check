@@ -1,43 +1,11 @@
-/**
- * 스포츠심리기술 검사 - 구글시트 백엔드 (Google Apps Script)
- *
- * 설치 방법:
- * 1. 새 구글 스프레드시트를 만든다 (예: "심리검사_결과").
- * 2. 메뉴 확장 프로그램 > Apps Script 를 연다.
- * 3. 기본 생성된 코드를 지우고 이 파일 내용 전체를 붙여넣는다.
- * 4. 왼쪽 톱니바퀴(프로젝트 설정) > 스크립트 속성에서
- *    속성 이름: ADMIN_PASSWORD, 값: 원하는 관리자 비밀번호 를 추가한다.
- * 5. 오른쪽 위 "배포" > "새 배포" > 유형: 웹 앱 선택.
- *    - 실행 계정: 나
- *    - 액세스 권한이 있는 사용자: 모든 사용자
- *    "배포" 클릭 → 구글 계정 권한 승인(본인 계정이므로 안전) → 생성된 웹 앱 URL을 복사한다.
- * 6. 복사한 URL을 src/App.jsx 맨 위 GOOGLE_SCRIPT_URL 상수에 붙여넣는다.
- *
- * 스프레드시트를 나중에 열어서 원본 데이터를 직접 볼 수도 있고,
- * 앱에서는 이 스크립트를 통해서만 이름+생년월일(선수 본인) 또는
- * 비밀번호(관리자)로 데이터를 조회할 수 있다.
- */
-
-const SHEET_NAME = 'responses';
 const ADMIN_PASSWORD_PROP = 'ADMIN_PASSWORD';
 
-const HEADERS = [
-  'id', 'timestamp', 'name', 'birth', 'org', 'sport',
-  'TOPS2_selfTalk', 'TOPS2_emotionControl', 'TOPS2_automaticity', 'TOPS2_goalSetting',
-  'TOPS2_imagery', 'TOPS2_relaxation', 'TOPS2_negativeThinking', 'TOPS2_distractibility',
-  'CSAI2_cognitive', 'CSAI2_somatic', 'CSAI2_selfConfidence',
-  'responses_json',
-];
-
-function getSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_NAME);
-    sheet.appendRow(HEADERS);
-  }
-  return sheet;
-}
+// 검사마다 저장할 시트 탭을 따로 둔다(예: "TOPS2 수행전략검사", "CSAI-2 경쟁상태불안검사" 탭 등).
+// 그래야 구글시트를 직접 열었을 때도 검사별로 결과가 분리되어, 하위척도 원점수가 컬럼으로 바로 보인다.
+// scores_json/responses_json은 앱 자체(조회·상세보기 등)가 다시 읽어들이기 위한 원본 데이터라
+// 사람이 직접 보라고 있는 컬럼은 아니다.
+const FIXED_HEADERS = ['id', 'timestamp', 'testId', 'testName', 'name', 'birth', 'org', 'sport'];
+const TRAILING_HEADERS = ['scores_json', 'responses_json'];
 
 function jsonOut_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
@@ -54,8 +22,26 @@ function normalizeBirth_(v) {
   return String(v).trim();
 }
 
-function readAllRows_() {
-  const sheet = getSheet_();
+// 구글시트 탭 이름에 쓸 수 없는 문자(: \ / ? * [ ])만 안전하게 치환한다.
+function safeSheetName_(name) {
+  const cleaned = String(name || 'unknown').replace(/[:\\/?*[\]]/g, ' ').trim();
+  return cleaned.slice(0, 90) || 'unknown';
+}
+
+// 검사(testId)별로 시트 탭을 찾거나, 없으면 이 제출 건의 척도 이름들로 헤더를 만들어 새로 생성한다.
+function getOrCreateTestSheet_(testId, testName, scoreDefs) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetName = safeSheetName_(testName || testId);
+  let sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+    const scoreHeaders = (scoreDefs || []).map((s) => s.name || s.key);
+    sheet.appendRow(FIXED_HEADERS.concat(scoreHeaders, TRAILING_HEADERS));
+  }
+  return sheet;
+}
+
+function readRowsFromSheet_(sheet) {
   const values = sheet.getDataRange().getValues();
   if (values.length < 2) return [];
   const headers = values[0];
@@ -67,21 +53,27 @@ function readAllRows_() {
   });
 }
 
+// 모든 검사 탭을 훑어 하나의 배열로 합친다. lookup/admin은 검사 종류를 가리지 않고 조회하므로 필요하다.
+function readAllRows_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let rows = [];
+  ss.getSheets().forEach((sheet) => {
+    rows = rows.concat(readRowsFromSheet_(sheet));
+  });
+  return rows;
+}
+
 function handleSubmit_(body) {
   const entry = body.entry || {};
   const athlete = entry.athlete || {};
-  const tops2 = {};
-  (entry.tops2Scores || []).forEach((s) => { tops2[s.key] = s.raw; });
-  const csai2 = {};
-  (entry.csai2Scores || []).forEach((s) => { csai2[s.key] = s.raw; });
+  const scores = entry.scores || [];
 
-  getSheet_().appendRow([
-    entry.id, entry.timestamp, athlete.name, athlete.birth, athlete.org, athlete.sport,
-    tops2.selfTalk, tops2.emotionControl, tops2.automaticity, tops2.goalSetting,
-    tops2.imagery, tops2.relaxation, tops2.negativeThinking, tops2.distractibility,
-    csai2.cognitive, csai2.somatic, csai2.selfConfidence,
-    JSON.stringify({ tops2: entry.tops2Responses, csai2: entry.csai2Responses }),
-  ]);
+  const sheet = getOrCreateTestSheet_(entry.testId, entry.testName, scores);
+  sheet.appendRow(
+    [entry.id, entry.timestamp, entry.testId, entry.testName, athlete.name, athlete.birth, athlete.org, athlete.sport]
+      .concat(scores.map((s) => s.raw))
+      .concat([JSON.stringify(scores), JSON.stringify(entry.responses || {})])
+  );
   return jsonOut_({ ok: true });
 }
 

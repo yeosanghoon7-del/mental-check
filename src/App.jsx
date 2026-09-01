@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
-import { ChevronRight, ChevronLeft, Check, Download, AlertCircle, RotateCcw, Smartphone, X, Lock, Search, User } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, Download, AlertCircle, RotateCcw, Smartphone, X, Lock, Search, User, Clock } from 'lucide-react';
 
 /* ============ Design tokens ============ */
 const C = {
@@ -19,7 +19,7 @@ const C = {
 // 비어있으면 기존처럼 이 기기의 localStorage에만 저장됩니다.
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzm-viLiL-b1ifpdHl703OgPJ4Q9EwNKd7NREUCrtve0bT1164lzqKuH14lMf1L8h9X/exec';
 
-/* ============ Data Definitions ============ */
+/* ============ TOPS2 수행전략검사 ============ */
 const TOPS2_ITEMS = [
   { no: 1, text: '시합에서 최선을 다할 수 있도록 긍정적인 혼잣말을 한다.' },
   { no: 2, text: '혼잣말을 효과적으로 잘한다.' },
@@ -102,6 +102,18 @@ const TOPS2_SUBSCALES = [
     tip: '훈련 중 일부러 소음이나 관중 등 방해 자극을 노출시켜, 그 상황에서도 루틴을 유지하는 연습을 해보세요.' },
 ];
 
+const TOPS2_TEST = {
+  id: 'tops2',
+  name: 'TOPS2 수행전략검사',
+  shortDesc: '혼잣말·심상·목표설정 등 8개 심리기술',
+  items: TOPS2_ITEMS,
+  likert: TOPS2_LIKERT,
+  scaleMax: 5,
+  minVal: 1,
+  subscales: TOPS2_SUBSCALES,
+};
+
+/* ============ CSAI-2 경쟁상태불안검사 ============ */
 const CSAI2_ITEMS = [
   { no: 1, text: '이번 시합에 신경 쓰인다.' },
   { no: 2, text: '초조하다.' },
@@ -157,13 +169,260 @@ const CSAI2_SUBSCALES = [
     tip: '최근 성공했던 경험을 구체적으로 떠올리거나, 강점 리스트를 시합 전에 다시 읽는 루틴을 만들어보세요.' },
 ];
 
+const CSAI2_TEST = {
+  id: 'csai2',
+  name: 'CSAI-2 경쟁상태불안검사',
+  shortDesc: '인지적불안·신체적불안·상태자신감',
+  items: CSAI2_ITEMS,
+  likert: CSAI2_LIKERT,
+  scaleMax: 4,
+  minVal: 1,
+  subscales: CSAI2_SUBSCALES,
+};
+
+/* ============ 자동적 사고 척도-부정형 (ATQ-N) ============ */
+const ATQN_ITEMS = [
+  { no: 1, text: '세상이 나를 힘들게 하는 것처럼 느껴진다.' },
+  { no: 2, text: '나는 쓸모없는 사람이다.' },
+  { no: 3, text: '도대체 왜 나는 성공할 수 없는 것일까?' },
+  { no: 4, text: '아무도 나를 이해해 주지 않는다.' },
+  { no: 5, text: '나는 종종 사람들을 실망 시켜 왔다.' },
+  { no: 6, text: '나는 내가 해온 일을 계속 할 수 없을 것 같다.' },
+  { no: 7, text: '나는 더 나은 사람이 되고 싶다.' },
+  { no: 8, text: '나는 너무 나약하다.' },
+  { no: 9, text: '내 인생은 내가 원하는 대로 흘러가고 있지 않다.' },
+  { no: 10, text: '나는 내 자신에 대해 매우 실망하고 있다.' },
+  { no: 11, text: '어떤 것에서도 더 이상 즐거움을 느낄 수가 없다.' },
+  { no: 12, text: '나는 이제 더 이상 인내할 수 없다.' },
+  { no: 13, text: '나는 새로운 일을 착수할 수 없다.' },
+  { no: 14, text: '도대체 나에게 무엇이 잘못되어 있는가?' },
+  { no: 15, text: '나는 다른 곳에서 살았으면 좋겠다.' },
+  { no: 16, text: '왜 나에겐 모든 것이 뒤죽박죽일까?' },
+  { no: 17, text: '나는 내 자신을 싫어한다.' },
+  { no: 18, text: '나는 가치 없는 인간이다.' },
+  { no: 19, text: '나는 어디론가 사라져 버리고 싶다.' },
+  { no: 20, text: '도대체 나에겐 무엇이 문제란 말인가?' },
+  { no: 21, text: '나는 인생의 패배자다.' },
+  { no: 22, text: '내 인생은 엉망진창이다.' },
+  { no: 23, text: '나는 실패자다.' },
+  { no: 24, text: '나는 결코 성공하지 못할 것이다.' },
+  { no: 25, text: '나는 무기력하다.' },
+  { no: 26, text: '나는 무언가 변화되어야 한다.' },
+  { no: 27, text: '나에겐 틀림없이 무언가 잘못되어 있다.' },
+  { no: 28, text: '나는 미래에 대한 희망이 없다.' },
+  { no: 29, text: '가치 있게 느껴지는 것이 없다.' },
+  { no: 30, text: '나는 어떤 일도 끝까지 해 낼 수 없다.' },
+];
+
+const ATQN_LIKERT = [
+  { v: 0, label: '전혀없음' },
+  { v: 1, label: '가끔' },
+  { v: 2, label: '종종' },
+  { v: 3, label: '자주' },
+  { v: 4, label: '항상' },
+];
+
+const ATQN_SUBSCALES = [
+  { key: 'total', name: '부정적 자동사고', items: ATQN_ITEMS.map((it) => it.no), reverse: [], positive: false,
+    def: '우울하거나 힘든 상황에서 저절로 떠오르는 부정적 생각(자동적 사고)의 빈도.',
+    high: '자기비판적이고 부정적인 생각이 자주, 자동적으로 떠오르는 편이에요.',
+    low: '부정적인 생각에 크게 휘둘리지 않고 비교적 안정적인 편이에요.',
+    tip: '부정적 생각이 떠오를 때 그 생각을 사실이 아닌 "하나의 생각"으로 거리를 두고 바라보는 인지적 탈융합 연습이 도움이 될 수 있어요. 지속적으로 힘들다면 전문가와 상담을 권해드려요.' },
+];
+
+const ATQN_TEST = {
+  id: 'atqn',
+  name: '자동적 사고 척도-부정형',
+  shortDesc: '부정적 자동사고의 빈도 (단일 총점)',
+  items: ATQN_ITEMS,
+  likert: ATQN_LIKERT,
+  scaleMax: 4,
+  minVal: 0,
+  subscales: ATQN_SUBSCALES,
+};
+
+/* ============ 한국판 Conners 성인 ADHD 평정척도-단축판 (CAARS-K) ============ */
+// ⚠️ 이 검사는 MHS사가 판매하는 유료 상업용 심리검사(Conners)의 한국판입니다.
+// 정식 채점에는 연령·성별 규준(T점수) 변환표가 필요하지만 공개된 자료가 아니라
+// 확보하지 못했습니다. 그래서 아래는 원점수(0~3점 응답의 합)만 계산하며,
+// 임상적으로 확정된 판정이 아니라는 점을 화면에 분명히 표시합니다.
+const CONNERS_ITEMS = [
+  { no: 1, text: '나는 다른 사람이 말할 때 방해하거나 끼어든다.' },
+  { no: 2, text: '나는 마치 모터에 의해 움직이는 것처럼 항상 끊임없이 움직인다.' },
+  { no: 3, text: '나는 체계적이지 못하고 뒤죽박죽이다.' },
+  { no: 4, text: '나는 한자리에 오래 머물러 있는 것이 힘들다.' },
+  { no: 5, text: '나는 여러 가지 일을 동시에 처리하기가 힘들다.' },
+  { no: 6, text: '나는 쉽게 지루해진다.' },
+  { no: 7, text: '나는 성미가 급하고 와락 화를 내곤 한다.' },
+  { no: 8, text: '나는 여전히 애처럼 불끈 울화통을 터트리곤 한다.' },
+  { no: 9, text: '나는 나의 능력에 대한 믿음이 부족해서 새로운 도전을 피한다.' },
+  { no: 10, text: '나는 빠르고 자극적인 활동을 추구한다.' },
+  { no: 11, text: '나는 가만히 앉아 있을 때에도 침착하지 못하고 들떠 있다.' },
+  { no: 12, text: '외부자극들로 쉽게 마음이 산란해진다.' },
+  { no: 13, text: '많은 일들이 쉽게 내 기분을 잡치게 한다.' },
+  { no: 14, text: '나는 내 능력만큼 발휘하지 못해왔다.' },
+  { no: 15, text: '나는 내 자신을 책망하곤 한다.' },
+  { no: 16, text: '나는 겉으로는 잘 행동하나 속으로는 나 자신에 대한 확신이 없다.' },
+  { no: 17, text: '나는 절대적인 마감시간이 없는 한 일을 마칠 수 없다.' },
+  { no: 18, text: '나는 어떤 과제를 시작하는 것이 힘들다.' },
+  { no: 19, text: '나는 다른 사람의 일들에 간섭하거나 끼어든다.' },
+  { no: 20, text: '나의 기분을 예측하기 힘들다.' },
+  { no: 21, text: '나는 일상적인 생활에서 생각 없이 멍해지곤 한다.' },
+  { no: 22, text: '나는 때로 주의가 너무 축소되어 나머지 일들에 대해서는 멍해질 때가 있다; 어떨 때에는 반대로 주의가 너무 확장되어서 사소한 것에도 산만해 진다.' },
+  { no: 23, text: '나는 곰지락거리거나 꿈틀거리는 경향이 있다.' },
+  { no: 24, text: '나는 어떤 일이 정말 흥미롭지 않다면 마음을 집중할 수가 없다.' },
+  { no: 25, text: '나는 나의 능력에 대해 좀 더 확신을 가졌으면 좋겠다.' },
+  { no: 26, text: '나는 나의 과거 실패 때문에 나 자신을 믿기가 어렵다.' },
+];
+
+const CONNERS_LIKERT = [
+  { v: 0, label: '전혀아님' },
+  { v: 1, label: '약간그럼' },
+  { v: 2, label: '그러함' },
+  { v: 3, label: '매우자주' },
+];
+
+const CONNERS_SUBSCALES = [
+  { key: 'inattention', name: '부주의 및 기억문제', items: [3, 5, 17, 18, 21], reverse: [], positive: false,
+    def: '체계적이지 못함, 마감시간 없이는 일을 못 끝냄 등 부주의·기억 관련 어려움의 빈도 (원점수 참고용, 임상 진단 아님).',
+    high: '부주의·기억 관련 어려움을 상대적으로 자주 보고했어요.',
+    low: '부주의·기억 관련 어려움을 상대적으로 적게 보고했어요.',
+    tip: '이 결과만으로 ADHD를 진단할 수 없어요. 어려움이 지속된다면 정신건강의학과 등 전문기관에서 정식 평가를 받아보시길 권해드려요.' },
+  { key: 'hyperactivity', name: '과잉행동 및 초조함', items: [4, 6, 10, 11, 23], reverse: [], positive: false,
+    def: '가만히 있지 못함, 쉽게 지루해짐 등 과잉행동·초조함의 빈도 (원점수 참고용, 임상 진단 아님).',
+    high: '과잉행동·초조함 관련 특성을 상대적으로 자주 보고했어요.',
+    low: '과잉행동·초조함 관련 특성을 상대적으로 적게 보고했어요.',
+    tip: '이 결과만으로 ADHD를 진단할 수 없어요. 어려움이 지속된다면 정신건강의학과 등 전문기관에서 정식 평가를 받아보시길 권해드려요.' },
+  { key: 'impulsivity', name: '충동성 및 정서적 불안정', items: [1, 7, 8, 13, 20], reverse: [], positive: false,
+    def: '참을성 부족, 감정 기복, 쉽게 화를 냄 등 충동성·정서적 불안정의 빈도 (원점수 참고용, 임상 진단 아님).',
+    high: '충동성·정서적 불안정 관련 특성을 상대적으로 자주 보고했어요.',
+    low: '충동성·정서적 불안정 관련 특성을 상대적으로 적게 보고했어요.',
+    tip: '이 결과만으로 ADHD를 진단할 수 없어요. 어려움이 지속된다면 정신건강의학과 등 전문기관에서 정식 평가를 받아보시길 권해드려요.' },
+  { key: 'selfConcept', name: '자기개념 문제', items: [9, 15, 16, 25, 26], reverse: [], positive: false,
+    def: '자기 능력에 대한 확신 부족, 자기책망 등 자기개념 관련 어려움의 빈도 (원점수 참고용, 임상 진단 아님).',
+    high: '자기개념 관련 어려움을 상대적으로 자주 보고했어요.',
+    low: '자기개념 관련 어려움을 상대적으로 적게 보고했어요.',
+    tip: '이 결과만으로 ADHD를 진단할 수 없어요. 어려움이 지속된다면 정신건강의학과 등 전문기관에서 정식 평가를 받아보시길 권해드려요.' },
+  { key: 'adhdIndex', name: 'ADHD 지수', items: [2, 7, 8, 9, 11, 12, 14, 17, 19, 22, 24, 26], reverse: [], positive: false,
+    def: '위 4개 하위영역을 가로지르는 종합 지표 문항들의 빈도 (원점수 참고용, 임상 진단 아님).',
+    high: 'ADHD 지수에 해당하는 문항들에 상대적으로 자주 그렇다고 응답했어요.',
+    low: 'ADHD 지수에 해당하는 문항들에 상대적으로 적게 그렇다고 응답했어요.',
+    tip: '정식 CAARS 채점은 연령·성별 규준(T점수)이 필요합니다. 이 앱은 그 규준표를 확보하지 못해 원점수만 보여드리는 것이며, 진단 목적으로 사용할 수 없습니다.' },
+];
+
+const CONNERS_TEST = {
+  id: 'conners',
+  name: '한국판 Conners 성인 ADHD 평정척도',
+  shortDesc: '⚠️ 원점수만 제공 (정식 T점수 규준 아님, 진단용 아님)',
+  items: CONNERS_ITEMS,
+  likert: CONNERS_LIKERT,
+  scaleMax: 3,
+  minVal: 0,
+  subscales: CONNERS_SUBSCALES,
+};
+
+/* ============ 스포츠심리기술 질문지 ============ */
+const SPORT_SKILL_ITEMS = [
+  { no: 1, text: '내 능력을 믿는다' },
+  { no: 2, text: '나의 플레이에 지장을 줄 정도로 긴장한다' },
+  { no: 3, text: '평소 훈련할 때 목표를 설정한다' },
+  { no: 4, text: '시합에서 집중이 제대로 안된다' },
+  { no: 5, text: '시합에 대해 너무 걱정하는 편이다' },
+  { no: 6, text: '나의 동작을 쉽게 상상할 수 있다' },
+  { no: 7, text: '세부적인 목표를 세운다' },
+  { no: 8, text: '팀 동료들과 지내는 것이 즐겁다' },
+  { no: 9, text: '내 실력에 자신이 있다' },
+  { no: 10, text: '목표를 세우고 달성하는 편이다' },
+  { no: 11, text: '부상에도 불구하고 해내려 애쓴다' },
+  { no: 12, text: '시합할 때 가끔 딴 생각이 든다' },
+  { no: 13, text: '시합상황이 불리하면 흔들린다' },
+  { no: 14, text: '아파도 이겨낸다' },
+  { no: 15, text: '우리 팀 선수들은 서로 사기를 올려주려고 생각한다' },
+  { no: 16, text: '운동할 때 한 곳에 집중이 안된다' },
+  { no: 17, text: '시합 전에 마음이 긴장된다' },
+  { no: 18, text: '쓰러져도 끝까지 한다' },
+  { no: 19, text: '집중이 쉽게 무너진다' },
+  { no: 20, text: '성공적인 경기장면을 자주 상상해 본다' },
+  { no: 21, text: '계획을 세워 운동한다' },
+  { no: 22, text: '우리 팀은 실수를 해도 서로 격려한다' },
+  { no: 23, text: '나는 자신있게 시합에 임한다' },
+  { no: 24, text: '내 기술이 성공한 장면을 선명하게 떠 올릴 수 있다' },
+  { no: 25, text: '힘들어도 잘 해낸다' },
+  { no: 26, text: '시합 전 멋진 플레이를 연상한다' },
+  { no: 27, text: '이를 악물고 해내는 편이다' },
+  { no: 28, text: '우리 팀은 서로 믿고 의지한다' },
+];
+
+const SPORT_SKILL_LIKERT = [
+  { v: 1, label: '전혀아니다' },
+  { v: 2, label: '아니다' },
+  { v: 3, label: '보통이다' },
+  { v: 4, label: '그렇다' },
+  { v: 5, label: '매우그렇다' },
+];
+
+const SPORT_SKILL_SUBSCALES = [
+  { key: 'confidence', name: '자신감', items: [1, 9, 23, 25], reverse: [], positive: true,
+    def: '경기 수행에 대해 스스로 느끼는 믿음과 자신감의 정도.',
+    high: '자신의 능력과 수행에 대한 믿음이 강한 편이에요.',
+    low: '자신의 실력에 대한 확신이 부족한 편이에요.',
+    tip: '작은 성공 경험을 기록해두고, 시합 전 자신 있었던 순간을 떠올리는 루틴을 만들어보세요.' },
+  { key: 'concentration', name: '집중력', items: [4, 12, 16, 19], reverse: [4, 12, 16, 19], positive: true,
+    def: '시합·훈련 중 잡생각이나 방해 요소 없이 몰입하는 정도.',
+    high: '방해 요인이 있어도 집중을 잘 유지하는 편이에요.',
+    low: '딴 생각이나 방해 요인에 집중이 쉽게 흐트러지는 편이에요.',
+    tip: '집중이 흐트러질 때 되돌아올 신호(호흡 1회, 큐워드 등)를 미리 정해두고 훈련 중 반복 연습해보세요.' },
+  { key: 'goalSetting', name: '목표설정', items: [3, 7, 10, 21], reverse: [], positive: true,
+    def: '훈련·시합을 위한 목표를 스스로 세우고 실천하는 습관.',
+    high: '구체적인 목표를 세우고 실행하는 습관이 잘 잡혀 있어요.',
+    low: '뚜렷한 목표 없이 훈련·시합에 임하는 경향이 있어요.',
+    tip: '이번 주/이번 시합의 구체적 목표를 1~2개 적어보고, 끝난 뒤 달성 여부를 점검해보세요.' },
+  { key: 'teamHarmony', name: '팀조화', items: [8, 15, 22, 28], reverse: [], positive: true,
+    def: '팀 동료들과의 관계 및 팀 내 지지·격려 분위기를 느끼는 정도.',
+    high: '팀 동료들과 잘 어울리고 서로 지지하는 분위기를 느끼고 있어요.',
+    low: '팀 내 관계나 소속감에서 어려움을 느끼는 편이에요.',
+    tip: '팀 동료에게 먼저 작은 격려나 인정의 말을 건네는 것부터 시작해보세요.' },
+  { key: 'imagery', name: '심상', items: [6, 20, 24, 26], reverse: [], positive: true,
+    def: '성공적인 수행 장면을 머릿속으로 생생하게 그려보는 능력.',
+    high: '원하는 동작과 성공 장면을 생생하게 상상하는 훈련이 잘 되어 있어요.',
+    low: '심상 훈련을 거의 활용하지 않거나 이미지가 잘 그려지지 않는 편이에요.',
+    tip: '훈련 전후 몇 분씩 성공 장면을 시각·촉각·소리까지 함께 떠올리는 연습을 루틴화해보세요.' },
+  { key: 'willpower', name: '의지력', items: [11, 14, 18, 27], reverse: [], positive: true,
+    def: '힘들거나 아파도 포기하지 않고 끝까지 해내려는 의지.',
+    high: '어려운 상황에서도 포기하지 않고 끝까지 해내는 편이에요.',
+    low: '힘든 상황에서 의지가 쉽게 꺾이는 편이에요.',
+    tip: '힘든 순간에 스스로에게 되뇔 짧은 다짐 문구를 미리 정해두고 훈련 중 실제로 사용해보세요.' },
+  { key: 'anxietyControl', name: '불안조절', items: [2, 5, 13, 17], reverse: [2, 5, 13, 17], positive: true,
+    def: '시합 전후의 긴장·걱정을 스스로 다스리는 능력.',
+    high: '긴장되는 상황에서도 스스로 마음을 잘 다스리는 편이에요.',
+    low: '시합 전후 긴장·걱정이 크고 스스로 다스리기 어려운 편이에요.',
+    tip: '호흡 조절이나 루틴화된 이완 동작을 시합 전 준비 과정에 포함시켜보세요.' },
+];
+
+const SPORT_SKILL_TEST = {
+  id: 'sportskill',
+  name: '스포츠심리기술 검사지',
+  shortDesc: '자신감·집중력·목표설정·팀조화·심상·의지력·불안조절',
+  items: SPORT_SKILL_ITEMS,
+  likert: SPORT_SKILL_LIKERT,
+  scaleMax: 5,
+  minVal: 1,
+  subscales: SPORT_SKILL_SUBSCALES,
+};
+
+const TESTS = [SPORT_SKILL_TEST, CSAI2_TEST, TOPS2_TEST, ATQN_TEST, CONNERS_TEST];
+
+function getTestById(id) {
+  return TESTS.find((t) => t.id === id) || null;
+}
+
 /* ================= Helper Functions ================= */
-function scoreSubscales(subscales, responses, scaleMax) {
+function scoreSubscales(subscales, responses, scaleMax, minVal = 1) {
   return subscales.map((sub) => {
     let raw = 0;
     sub.items.forEach((no) => {
-      const v = responses[no] || 0;
-      raw += sub.reverse.includes(no) ? scaleMax + 1 - v : v;
+      const v = responses[no] ?? minVal;
+      raw += sub.reverse.includes(no) ? scaleMax + minVal - v : v;
     });
     const max = sub.items.length * scaleMax;
     const norm = max > 0 ? (raw / max) * 100 : 0;
@@ -171,18 +430,35 @@ function scoreSubscales(subscales, responses, scaleMax) {
   });
 }
 
-// 클라우드(구글시트)에서 받아온 원점수 row를 화면에 그릴 수 있는 형태로 변환
-function rowToMerged(row, subscales, prefix, scaleMax) {
-  return subscales.map((sub) => {
-    const raw = Number(row[`${prefix}_${sub.key}`]) || 0;
-    const max = sub.items.length * scaleMax;
-    const norm = max > 0 ? (raw / max) * 100 : 0;
-    return { ...sub, raw, max, norm };
+// 클라우드(구글시트)에 저장된 scores_json을 해당 검사의 정의(해석문구 등)와 다시 합친다
+function mergeStoredScores(testDef, storedScores) {
+  if (!testDef || !testDef.subscales) return [];
+  return testDef.subscales.map((sub) => {
+    const found = (storedScores || []).find((s) => s.key === sub.key) || {};
+    const max = found.max ?? sub.items.length * (testDef.scaleMax || 5);
+    return { ...sub, raw: found.raw ?? 0, max, norm: found.norm ?? 0 };
   });
 }
 
+function safeParseScores(json) {
+  try {
+    const v = JSON.parse(json || '[]');
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+
+function groupByTestId(rows) {
+  const g = {};
+  (rows || []).forEach((r) => {
+    (g[r.testId] = g[r.testId] || []).push(r);
+  });
+  return g;
+}
+
 function validateAnswers(items, responses) {
-  return items.filter((it) => !responses[it.no]).map((it) => it.no);
+  return items.filter((it) => !(it.no in responses)).map((it) => it.no);
 }
 
 function makeId() {
@@ -191,7 +467,9 @@ function makeId() {
 
 function toCSV(rows) {
   if (!rows.length) return '';
-  const headers = Object.keys(rows[0]);
+  const headerSet = new Set();
+  rows.forEach((r) => Object.keys(r).forEach((k) => headerSet.add(k)));
+  const headers = Array.from(headerSet);
   const esc = (v) => {
     const s = String(v ?? '');
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -238,11 +516,11 @@ function syncToSheet(entry) {
       entry: {
         id: entry.id,
         timestamp: entry.timestamp,
+        testId: entry.testId,
+        testName: entry.testName,
         athlete: entry.athlete,
-        tops2Scores: entry.tops2.scores,
-        csai2Scores: entry.csai2.scores,
-        tops2Responses: entry.tops2.responses,
-        csai2Responses: entry.csai2.responses,
+        scores: entry.scores,
+        responses: entry.responses,
       },
     }),
   }).catch(() => {});
@@ -268,7 +546,7 @@ function Field({ label, value, onChange, placeholder, type = 'text' }) {
 }
 
 function LikertItem({ no, text, options, value, onChange, idPrefix }) {
-  const answered = !!value;
+  const answered = value !== undefined && value !== null;
   return (
     <div id={`${idPrefix}-item-${no}`} className="py-5 border-b text-center" style={{ borderColor: C.line }}>
       <div className="mb-3 text-center">
@@ -346,22 +624,17 @@ function ScoreRow({ name, raw, max, norm, def, high, low, tip, positive }) {
   );
 }
 
-// TOPS2 + CSAI-2 레이더차트/척도카드 묶음 — 검사 직후 결과 화면과 개인 조회 상세 화면에서 공용으로 사용
-function ResultsBlock({ tops2Merged, csai2Merged }) {
+// 레이더차트/척도카드 묶음 — 검사 직후 결과 화면과 개인 조회 상세 화면에서 공용으로 사용.
+// 하위척도가 1개뿐인 검사(예: ATQ-N)는 레이더차트를 생략한다.
+function ResultsBlock({ title, merged }) {
   return (
     <>
-      <p className="text-xs font-bold font-mono uppercase tracking-wider text-center" style={{ color: C.accent }}>TOPS2 프로파일</p>
-      <ScoreRadar data={tops2Merged.map((s) => ({ subject: s.name, value: Number(s.norm.toFixed(1)) }))} />
-      <div className="rounded-2xl border p-2 mb-6 shadow-sm" style={{ background: C.card, borderColor: C.line }}>
-        {tops2Merged.map((s) => (
-          <ScoreRow key={s.key} name={s.name} raw={s.raw} max={s.max} norm={s.norm} def={s.def} high={s.high} low={s.low} tip={s.tip} positive={s.positive} />
-        ))}
-      </div>
-
-      <p className="text-xs font-bold font-mono uppercase tracking-wider text-center mt-6" style={{ color: C.accent }}>CSAI-2 · 경쟁상태불안검사</p>
-      <ScoreRadar data={csai2Merged.map((s) => ({ subject: s.name, value: Number(s.norm.toFixed(1)) }))} />
-      <div className="rounded-2xl border p-2 shadow-sm" style={{ background: C.card, borderColor: C.line }}>
-        {csai2Merged.map((s) => (
+      <p className="text-xs font-bold font-mono uppercase tracking-wider text-center" style={{ color: C.accent }}>{title}</p>
+      {merged.length > 1 && (
+        <ScoreRadar data={merged.map((s) => ({ subject: s.name, value: Number(s.norm.toFixed(1)) }))} />
+      )}
+      <div className="rounded-2xl border p-2 mt-3 shadow-sm" style={{ background: C.card, borderColor: C.line }}>
+        {merged.map((s) => (
           <ScoreRow key={s.key} name={s.name} raw={s.raw} max={s.max} norm={s.norm} def={s.def} high={s.high} low={s.low} tip={s.tip} positive={s.positive} />
         ))}
       </div>
@@ -369,17 +642,17 @@ function ResultsBlock({ tops2Merged, csai2Merged }) {
   );
 }
 
-// 여러 회차 검사의 하위척도 점수를 나란히 놓고 변화 추이를 비교하는 표
-function TrendTable({ sessions, subscales, prefix, scaleMax }) {
+// 같은 검사를 여러 번 응시했을 때 하위척도 점수를 나란히 놓고 변화 추이를 비교하는 표
+function TrendTable({ sessions, subscales }) {
   return (
     <div className="overflow-x-auto -mx-4 px-4 mb-4">
       <table className="text-xs font-mono border-collapse w-full" style={{ minWidth: 480 }}>
         <thead>
           <tr className="border-b" style={{ borderColor: C.line }}>
             <th className="text-left py-2 pr-3 font-bold whitespace-nowrap" style={{ color: C.inkDim }}>척도</th>
-            {sessions.map((row, i) => (
+            {sessions.map((s, i) => (
               <th key={i} className="text-center py-2 px-2 font-bold whitespace-nowrap" style={{ color: C.inkDim }}>
-                {new Date(row.timestamp).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
+                {new Date(s.timestamp).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
               </th>
             ))}
           </tr>
@@ -388,12 +661,12 @@ function TrendTable({ sessions, subscales, prefix, scaleMax }) {
           {subscales.map((sub) => (
             <tr key={sub.key} className="border-b" style={{ borderColor: C.line }}>
               <td className="py-2 pr-3 font-bold whitespace-nowrap text-left" style={{ color: C.ink }}>{sub.name}</td>
-              {sessions.map((row, i) => {
-                const raw = Number(row[`${prefix}_${sub.key}`]) || 0;
-                const max = sub.items.length * scaleMax;
-                const norm = max > 0 ? (raw / max) * 100 : 0;
+              {sessions.map((s, i) => {
+                const found = (s.scores || []).find((x) => x.key === sub.key);
                 return (
-                  <td key={i} className="py-2 px-2 text-center font-bold" style={{ color: C.ink }}>{norm.toFixed(0)}</td>
+                  <td key={i} className="py-2 px-2 text-center font-bold" style={{ color: C.ink }}>
+                    {found ? found.norm.toFixed(0) : '-'}
+                  </td>
                 );
               })}
             </tr>
@@ -407,9 +680,9 @@ function TrendTable({ sessions, subscales, prefix, scaleMax }) {
 /* ================= Main App ================= */
 export default function App() {
   // ===== 새로고침해도 진행 중이던 화면/응답이 유지되도록 처리 =====
-  const DRAFT_KEY = 'mc_draft_v1';
+  const DRAFT_KEY = 'mc_draft_v2';
   // 결과조회/관리자 화면은 개인정보가 뜬 채로 남을 수 있어 새로고침 시 복원 대상에서 제외
-  const RESTORABLE_SCREENS = ['intro', 'tops2', 'csai2', 'results'];
+  const RESTORABLE_SCREENS = ['intro', 'quiz', 'results'];
   function loadDraft() {
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
@@ -422,8 +695,8 @@ export default function App() {
 
   const [screen, setScreen] = useState(RESTORABLE_SCREENS.includes(draft?.screen) ? draft.screen : 'intro');
   const [athlete, setAthlete] = useState(draft?.athlete || { name: '', birth: '', org: '', sport: '' });
-  const [tops2Res, setTops2Res] = useState(draft?.tops2Res || {});
-  const [csai2Res, setCsai2Res] = useState(draft?.csai2Res || {});
+  const [selectedTestId, setSelectedTestId] = useState(draft?.selectedTestId || null);
+  const [responses, setResponses] = useState(draft?.responses || {});
   const [errorMsg, setErrorMsg] = useState('');
   const [savedEntry, setSavedEntry] = useState(draft?.savedEntry || null);
 
@@ -440,6 +713,7 @@ export default function App() {
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminError, setAdminError] = useState('');
   const [adminRows, setAdminRows] = useState(null);
+  const [adminDetailIdx, setAdminDetailIdx] = useState(null);
 
   // ===== 앱 설치(PWA) 관련 상태 =====
   const [installPrompt, setInstallPrompt] = useState(null); // 안드로이드/데스크톱 크롬이 던져주는 설치 이벤트
@@ -448,17 +722,19 @@ export default function App() {
   const [showIOSGuide, setShowIOSGuide] = useState(false);  // iOS용 수동 안내 팝업
   const [confirmGoIntro, setConfirmGoIntro] = useState(false); // 처음화면 이동 확인 팝업 (window.confirm 대신 자체 구현)
 
+  const currentTest = getTestById(selectedTestId);
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [screen]);
 
   useEffect(() => {
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ screen, athlete, tops2Res, csai2Res, savedEntry }));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ screen, athlete, selectedTestId, responses, savedEntry }));
     } catch {
       // 저장 실패는 무시 (용량 초과 등)
     }
-  }, [screen, athlete, tops2Res, csai2Res, savedEntry]);
+  }, [screen, athlete, selectedTestId, responses, savedEntry]);
 
   useEffect(() => {
     const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -496,44 +772,37 @@ export default function App() {
 
   const showInstallButton = !isStandalone && (isIOS || !!installPrompt);
 
-  function goToTops2() {
+  function startTest(testId) {
     if (!athlete.name.trim() || !athlete.birth.trim() || !athlete.org.trim() || !athlete.sport.trim()) {
       setErrorMsg('이름, 생년월일, 소속, 종목을 모두 입력해주세요.');
+      window.scrollTo(0, 0);
       return;
     }
     setErrorMsg('');
-    setScreen('tops2');
+    setSelectedTestId(testId);
+    setResponses({});
+    setScreen('quiz');
   }
 
-  function goToCsai2() {
-    const missing = validateAnswers(TOPS2_ITEMS, tops2Res);
+  function submitTest() {
+    if (!currentTest) return;
+    const missing = validateAnswers(currentTest.items, responses);
     if (missing.length) {
       setErrorMsg(`미응답 문항이 있습니다 (${missing[0]}번 확인).`);
-      const el = document.getElementById(`tops2-item-${missing[0]}`);
+      const el = document.getElementById(`quiz-item-${missing[0]}`);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     setErrorMsg('');
-    setScreen('csai2');
-  }
-
-  function submitAll() {
-    const missing = validateAnswers(CSAI2_ITEMS, csai2Res);
-    if (missing.length) {
-      setErrorMsg(`미응답 문항이 있습니다 (${missing[0]}번 확인).`);
-      const el = document.getElementById(`csai2-item-${missing[0]}`);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    setErrorMsg('');
-    const tops2Scores = scoreSubscales(TOPS2_SUBSCALES, tops2Res, 5);
-    const csai2Scores = scoreSubscales(CSAI2_SUBSCALES, csai2Res, 4);
+    const scores = scoreSubscales(currentTest.subscales, responses, currentTest.scaleMax, currentTest.minVal ?? 1);
     const entry = {
       id: makeId(),
       timestamp: new Date().toISOString(),
+      testId: currentTest.id,
+      testName: currentTest.name,
       athlete: { ...athlete },
-      tops2: { responses: tops2Res, scores: tops2Scores },
-      csai2: { responses: csai2Res, scores: csai2Scores },
+      scores,
+      responses: { ...responses },
     };
     try {
       localStorage.setItem(`response:${entry.id}`, JSON.stringify(entry));
@@ -545,8 +814,8 @@ export default function App() {
 
   function startNewTest() {
     setAthlete({ name: '', birth: '', org: '', sport: '' });
-    setTops2Res({});
-    setCsai2Res({});
+    setSelectedTestId(null);
+    setResponses({});
     setSavedEntry(null);
     try { localStorage.removeItem(DRAFT_KEY); } catch {}
     setScreen('intro');
@@ -588,6 +857,7 @@ export default function App() {
       const data = await callScript({ action: 'admin', password: adminPassword });
       const rows = (data.rows || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
       setAdminRows(rows);
+      setAdminDetailIdx(null);
     } catch {
       setAdminError('비밀번호가 틀렸거나 오류가 발생했어요.');
       setAdminRows(null);
@@ -601,23 +871,20 @@ export default function App() {
     const rows = adminRows.map((r) => {
       const row = {
         시간: new Date(r.timestamp).toLocaleString('ko-KR'),
+        검사명: r.testName,
         이름: r.name,
         생년월일: r.birth,
         소속: r.org,
         종목: r.sport,
       };
-      TOPS2_SUBSCALES.forEach((s) => { row[`TOPS2_${s.name}`] = r[`TOPS2_${s.key}`]; });
-      CSAI2_SUBSCALES.forEach((s) => { row[`CSAI2_${s.name}`] = r[`CSAI2_${s.key}`]; });
+      safeParseScores(r.scores_json).forEach((s) => { row[s.name] = s.raw; });
       return row;
     });
     downloadCSV(`sports_psych_data_${Date.now()}.csv`, toCSV(rows));
   }
 
-  const tops2Merged = savedEntry
-    ? TOPS2_SUBSCALES.map((sub, i) => ({ ...sub, ...savedEntry.tops2.scores[i] }))
-    : [];
-  const csai2Merged = savedEntry
-    ? CSAI2_SUBSCALES.map((sub, i) => ({ ...sub, ...savedEntry.csai2.scores[i] }))
+  const resultsMerged = savedEntry && currentTest
+    ? currentTest.subscales.map((sub, i) => ({ ...sub, ...savedEntry.scores[i] }))
     : [];
 
   return (
@@ -628,7 +895,7 @@ export default function App() {
           <div className="w-16"></div>
           <div className="text-center flex-1">
             <p className="text-[10px] font-mono font-bold tracking-widest uppercase" style={{ color: C.accent }}>Mental Skills Check</p>
-            <h1 className="text-lg font-black tracking-tight" style={{ color: C.ink }}>스포츠심리기술 검사</h1>
+            <h1 className="text-lg font-black tracking-tight" style={{ color: C.ink }}>스포츠심리검사</h1>
           </div>
           <div className="w-16 text-right">
             {!['resultsHome', 'lookup', 'admin'].includes(screen) && (
@@ -700,13 +967,36 @@ export default function App() {
                 <Field label="소속 팀 / 학과" value={athlete.org} onChange={(v) => setAthlete((a) => ({ ...a, org: v }))} placeholder="예: OO대학교 / OO팀" />
                 <Field label="운동 종목" value={athlete.sport} onChange={(v) => setAthlete((a) => ({ ...a, sport: v }))} placeholder="예: 축구, 태권도 등" />
               </div>
-              <div className="p-3.5 rounded-xl border text-xs leading-relaxed text-center" style={{ background: C.paperDim, borderColor: C.line, color: C.inkDim }}>
-                • 총 55문항 (TOPS2 28문항 + CSAI-2 27문항)<br />• 소요시간: 약 10분 내외<br />• 이름·생년월일은 나중에 본인 결과를 다시 조회할 때 필요해요.
-              </div>
+
+              <p className="text-xs font-bold mb-3 px-1 text-left" style={{ color: C.inkDim }}>실시할 검사를 선택하세요</p>
+              {TESTS.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => !t.comingSoon && startTest(t.id)}
+                  disabled={!!t.comingSoon}
+                  className="w-full mb-2.5 p-4 rounded-2xl border shadow-sm text-left flex items-center justify-between gap-3 disabled:opacity-50"
+                  style={{ background: C.card, borderColor: C.line }}
+                >
+                  <div>
+                    <p className="text-sm font-bold" style={{ color: C.ink }}>{t.name}</p>
+                    <p className="text-xs mt-0.5" style={{ color: C.inkDim }}>{t.shortDesc}</p>
+                    {!t.comingSoon && (
+                      <p className="text-[11px] font-mono font-bold mt-1" style={{ color: C.accent }}>{t.items.length}문항</p>
+                    )}
+                  </div>
+                  {t.comingSoon ? (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full whitespace-nowrap" style={{ background: C.paperDim, color: C.inkDim }}>
+                      <Clock size={10} style={{ display: 'inline', marginRight: 2, verticalAlign: '-1px' }} />준비중
+                    </span>
+                  ) : (
+                    <ChevronRight size={18} style={{ color: C.inkDim, flexShrink: 0 }} />
+                  )}
+                </button>
+              ))}
             </div>
           )}
 
-          {screen === 'tops2' && (
+          {screen === 'quiz' && currentTest && (
             <div>
               <button
                 onClick={() => setConfirmGoIntro(true)}
@@ -715,46 +1005,21 @@ export default function App() {
               >
                 <ChevronLeft size={14} /> 처음 화면으로
               </button>
-              <p className="text-xs font-bold mb-3 font-mono text-center" style={{ color: C.accent }}>STEP 1 · TOPS2 수행전략검사 (28문항)</p>
-              {TOPS2_ITEMS.map((it) => (
-                <LikertItem key={it.no} no={it.no} text={it.text} options={TOPS2_LIKERT} value={tops2Res[it.no]} onChange={(no, v) => setTops2Res((r) => ({ ...r, [no]: v }))} idPrefix="tops2" />
+              <p className="text-xs font-bold mb-3 font-mono text-center" style={{ color: C.accent }}>{currentTest.name} ({currentTest.items.length}문항)</p>
+              {currentTest.items.map((it) => (
+                <LikertItem key={it.no} no={it.no} text={it.text} options={currentTest.likert} value={responses[it.no]} onChange={(no, v) => setResponses((r) => ({ ...r, [no]: v }))} idPrefix="quiz" />
               ))}
             </div>
           )}
 
-          {screen === 'csai2' && (
-            <div>
-              <div className="flex gap-2 mb-3">
-                <button
-                  onClick={() => setScreen('tops2')}
-                  className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold border"
-                  style={{ borderColor: C.line, background: C.card, color: C.ink }}
-                >
-                  <ChevronLeft size={14} /> 이전 문항으로 (TOPS2)
-                </button>
-                <button
-                  onClick={() => setConfirmGoIntro(true)}
-                  className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold border"
-                  style={{ borderColor: C.line, background: C.card, color: C.inkDim }}
-                >
-                  처음 화면으로
-                </button>
-              </div>
-              <p className="text-xs font-bold mb-3 font-mono text-center" style={{ color: C.accent }}>STEP 2 · CSAI-2 경쟁상태불안 (27문항)</p>
-              {CSAI2_ITEMS.map((it) => (
-                <LikertItem key={it.no} no={it.no} text={it.text} options={CSAI2_LIKERT} value={csai2Res[it.no]} onChange={(no, v) => setCsai2Res((r) => ({ ...r, [no]: v }))} idPrefix="csai2" />
-              ))}
-            </div>
-          )}
-
-          {screen === 'results' && savedEntry && (
+          {screen === 'results' && savedEntry && currentTest && (
             <div className="pt-2">
               <div className="p-4 rounded-xl border mb-4 text-center" style={{ background: C.card, borderColor: C.line }}>
                 <h2 className="text-base font-bold">{savedEntry.athlete.name} 선수 결과</h2>
                 <p className="text-xs text-gray-500">{savedEntry.athlete.org} · {savedEntry.athlete.sport}</p>
               </div>
 
-              <ResultsBlock tops2Merged={tops2Merged} csai2Merged={csai2Merged} />
+              <ResultsBlock title={currentTest.name} merged={resultsMerged} />
 
               <button onClick={startNewTest} className="w-full py-3.5 mt-6 rounded-xl border font-bold text-sm bg-white shadow-sm flex items-center justify-center gap-2">
                 <RotateCcw size={16} /> 새 검사 시작하기
@@ -782,7 +1047,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setScreen('admin'); setAdminRows(null); setAdminError(''); }}
+                onClick={() => { setScreen('admin'); setAdminRows(null); setAdminError(''); setAdminDetailIdx(null); }}
                 className="w-full p-5 rounded-2xl border shadow-sm text-left flex items-center gap-3"
                 style={{ background: C.card, borderColor: C.line }}
               >
@@ -816,25 +1081,29 @@ export default function App() {
                 <div className="text-left">
                   <p className="text-xs font-bold mb-2 px-1" style={{ color: C.inkDim }}>총 {lookupRows.length}회 검사 기록</p>
 
-                  {lookupRows.length > 1 && (
-                    <>
-                      <p className="text-xs font-bold mb-2 px-1 mt-4" style={{ color: C.accent }}>TOPS2 변화 추이 (100점 환산)</p>
-                      <TrendTable sessions={lookupRows} subscales={TOPS2_SUBSCALES} prefix="TOPS2" scaleMax={5} />
-                      <p className="text-xs font-bold mb-2 px-1 mt-2" style={{ color: C.accent }}>CSAI-2 변화 추이 (100점 환산)</p>
-                      <TrendTable sessions={lookupRows} subscales={CSAI2_SUBSCALES} prefix="CSAI2" scaleMax={4} />
-                    </>
-                  )}
+                  {Object.entries(groupByTestId(lookupRows)).filter(([, rows]) => rows.length > 1).map(([testId, rows]) => {
+                    const testDef = getTestById(testId);
+                    if (!testDef) return null;
+                    const sessions = rows.map((r) => ({ timestamp: r.timestamp, scores: safeParseScores(r.scores_json) }));
+                    return (
+                      <div key={testId}>
+                        <p className="text-xs font-bold mb-2 px-1 mt-4" style={{ color: C.accent }}>{testDef.name} 변화 추이 (100점 환산)</p>
+                        <TrendTable sessions={sessions} subscales={testDef.subscales} />
+                      </div>
+                    );
+                  })}
 
                   <p className="text-xs font-bold mb-2 px-1 mt-4" style={{ color: C.inkDim }}>회차별 상세보기</p>
                   {lookupRows.map((r, i) => (
                     <button key={i} onClick={() => setLookupDetailIdx(i)} className="w-full mb-2 p-4 rounded-xl border shadow-sm flex items-center justify-between" style={{ background: C.card, borderColor: C.line }}>
                       <span>
-                        <span className="block text-sm font-bold" style={{ color: C.ink }}>
+                        <span className="block text-sm font-bold" style={{ color: C.ink }}>{r.testName}</span>
+                        <span className="block text-xs mt-0.5" style={{ color: C.inkDim }}>
                           {new Date(r.timestamp).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                         </span>
                         <span className="block text-xs" style={{ color: C.inkDim }}>{r.org} · {r.sport}</span>
                       </span>
-                      <ChevronRight size={16} style={{ color: C.inkDim }} />
+                      <ChevronRight size={16} style={{ color: C.inkDim, flexShrink: 0 }} />
                     </button>
                   ))}
                 </div>
@@ -846,8 +1115,8 @@ export default function App() {
                     <ChevronLeft size={14} /> 목록으로
                   </button>
                   <ResultsBlock
-                    tops2Merged={rowToMerged(lookupRows[lookupDetailIdx], TOPS2_SUBSCALES, 'TOPS2', 5)}
-                    csai2Merged={rowToMerged(lookupRows[lookupDetailIdx], CSAI2_SUBSCALES, 'CSAI2', 4)}
+                    title={lookupRows[lookupDetailIdx].testName}
+                    merged={mergeStoredScores(getTestById(lookupRows[lookupDetailIdx].testId), safeParseScores(lookupRows[lookupDetailIdx].scores_json))}
                   />
                 </div>
               )}
@@ -870,7 +1139,7 @@ export default function App() {
                 </div>
               )}
 
-              {adminRows && (
+              {adminRows && adminDetailIdx === null && (
                 <div className="text-left">
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="text-base font-bold" style={{ color: C.ink }}>전체 검사 결과</h2>
@@ -882,28 +1151,24 @@ export default function App() {
 
                   {adminRows.length > 0 && (
                     <div className="overflow-x-auto -mx-4 px-4">
-                      <table className="text-xs font-mono border-collapse w-full" style={{ minWidth: 700 }}>
+                      <table className="text-xs font-mono border-collapse w-full" style={{ minWidth: 560 }}>
                         <thead>
                           <tr className="border-b" style={{ borderColor: C.line }}>
-                            {['시간', '이름', '생년월일', '소속', '종목', ...TOPS2_SUBSCALES.map((s) => s.name), ...CSAI2_SUBSCALES.map((s) => s.name)].map((h) => (
+                            {['시간', '검사명', '이름', '생년월일', '소속', '종목', ''].map((h) => (
                               <th key={h} className="text-left py-2.5 pr-3 font-bold whitespace-nowrap" style={{ color: C.inkDim }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {adminRows.map((r, i) => (
-                            <tr key={i} className="border-b" style={{ borderColor: C.line }}>
+                            <tr key={i} className="border-b cursor-pointer" style={{ borderColor: C.line }} onClick={() => setAdminDetailIdx(i)}>
                               <td className="py-2.5 pr-3 whitespace-nowrap font-medium" style={{ color: C.ink }}>{new Date(r.timestamp).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+                              <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.testName}</td>
                               <td className="py-2.5 pr-3 whitespace-nowrap font-bold" style={{ color: C.ink }}>{r.name}</td>
                               <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.birth}</td>
                               <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.org}</td>
                               <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.sport}</td>
-                              {TOPS2_SUBSCALES.map((s) => (
-                                <td key={s.key} className="py-2.5 pr-3 font-bold whitespace-nowrap" style={{ color: C.ink }}>{r[`TOPS2_${s.key}`]}</td>
-                              ))}
-                              {CSAI2_SUBSCALES.map((s) => (
-                                <td key={s.key} className="py-2.5 pr-3 font-bold whitespace-nowrap" style={{ color: C.ink }}>{r[`CSAI2_${s.key}`]}</td>
-                              ))}
+                              <td className="py-2.5 pr-3"><ChevronRight size={14} style={{ color: C.inkDim }} /></td>
                             </tr>
                           ))}
                         </tbody>
@@ -911,6 +1176,22 @@ export default function App() {
                     </div>
                   )}
                   {adminRows.length === 0 && <p className="text-xs" style={{ color: C.inkDim }}>아직 저장된 응답이 없어요.</p>}
+                </div>
+              )}
+
+              {adminRows && adminDetailIdx !== null && (
+                <div>
+                  <button onClick={() => setAdminDetailIdx(null)} className="text-xs font-bold mb-4 flex items-center gap-1 mx-auto" style={{ color: C.inkDim }}>
+                    <ChevronLeft size={14} /> 목록으로
+                  </button>
+                  <div className="p-4 rounded-xl border mb-4 text-center" style={{ background: C.card, borderColor: C.line }}>
+                    <h2 className="text-base font-bold">{adminRows[adminDetailIdx].name} 선수 결과</h2>
+                    <p className="text-xs text-gray-500">{adminRows[adminDetailIdx].org} · {adminRows[adminDetailIdx].sport}</p>
+                  </div>
+                  <ResultsBlock
+                    title={adminRows[adminDetailIdx].testName}
+                    merged={mergeStoredScores(getTestById(adminRows[adminDetailIdx].testId), safeParseScores(adminRows[adminDetailIdx].scores_json))}
+                  />
                 </div>
               )}
             </div>
@@ -924,18 +1205,8 @@ export default function App() {
                 <AlertCircle size={14} /><span>{errorMsg}</span>
               </div>
             )}
-            {screen === 'intro' && (
-              <button onClick={goToTops2} className="w-full py-4 rounded-xl font-bold flex items-center justify-center gap-1 text-base shadow-md" style={{ background: C.ink, color: '#FFF' }}>
-                검사 시작하기 <ChevronRight size={18} />
-              </button>
-            )}
-            {screen === 'tops2' && (
-              <button onClick={goToCsai2} className="w-full py-4 rounded-xl font-bold flex items-center justify-center gap-1 text-base shadow-md" style={{ background: C.ink, color: '#FFF' }}>
-                다음: 경쟁상태불안검사 <ChevronRight size={18} />
-              </button>
-            )}
-            {screen === 'csai2' && (
-              <button onClick={submitAll} className="w-full py-4 rounded-xl font-bold flex items-center justify-center gap-1 text-base shadow-md" style={{ background: C.accent, color: '#FFF' }}>
+            {screen === 'quiz' && (
+              <button onClick={submitTest} className="w-full py-4 rounded-xl font-bold flex items-center justify-center gap-1 text-base shadow-md" style={{ background: C.accent, color: '#FFF' }}>
                 제출하고 결과 보기 <Check size={18} />
               </button>
             )}
