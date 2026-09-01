@@ -313,7 +313,7 @@ const CONNERS_SUBSCALES = [
 const CONNERS_TEST = {
   id: 'conners',
   name: '한국판 Conners 성인 ADHD 평정척도',
-  shortDesc: '⚠️ 원점수만 제공 (정식 T점수 규준 아님, 진단용 아님)',
+  shortDesc: '부주의·과잉행동·충동성·자기개념 등 성인 ADHD 관련 특성',
   items: CONNERS_ITEMS,
   likert: CONNERS_LIKERT,
   scaleMax: 3,
