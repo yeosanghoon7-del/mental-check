@@ -411,7 +411,599 @@ const SPORT_SKILL_TEST = {
   subscales: SPORT_SKILL_SUBSCALES,
 };
 
-const TESTS = [SPORT_SKILL_TEST, CSAI2_TEST, TOPS2_TEST, ATQN_TEST, CONNERS_TEST];
+/* ============ 스포츠 대처기술 검사지 (ACSI-28) ============ */
+const ACSI28_ITEMS = [
+  { no: 1, text: '나는 하루 또는 일주일 단위로 해야할 것을 제시해주는 아주 구체적인 목표를 내 스스로 정한다.' },
+  { no: 2, text: '나는 내가 갖고 있는 재능과 기술을 최대한 발휘할 수 있다.' },
+  { no: 3, text: '내가 저지른 실수를 어떻게 고칠 것인가에 대해 코치나 감독이 이야기하면, 나는 그것을 사적인 일로 받아들이고 화내는 경향이 있다.' },
+  { no: 4, text: '시합을 하고 있을 때 나는 주의집중을 잘 할 수 있고 주의가 흐트러지지 않도록 할 수 있다.' },
+  { no: 5, text: '시합에서 상황이 아무리 불리해지더라도 나는 긍정적이고 열성적으로 한다.' },
+  { no: 6, text: '나는 긴장압박이 되면 생각이 더 뚜렷해져서 시합을 더 잘하는 경향이 있다.' },
+  { no: 7, text: '다른 사람이 나의 운동대처기술에 대해 어떻게 생각할 것인가에 대하여 상당히 걱정한다.' },
+  { no: 8, text: '내 목표를 달성하기 위해 나는 충분한 계획을 세우는 경향이 있다.' },
+  { no: 9, text: '나는 시합을 잘할 것이라는 자신감이 있다.' },
+  { no: 10, text: '나는 코치나 지도자가 질책을 하면 받아들이기보다는 화가 먼저 치밀어 오른다.' },
+  { no: 11, text: '나는 내 주의를 흐트러뜨리는 잡생각에 구애하지 않고 집중할 수 있다.' },
+  { no: 12, text: '시합을 어떻게 할 것인가 걱정하기 때문에 내 스스로 많은 압박을 받는다.' },
+  { no: 13, text: '나는 연습할 때마다 내 스스로의 대처기술목표를 설정한다.' },
+  { no: 14, text: '연습이나 경기 때 누가 시키지 않아도 내 스스로 100% 최선을 다한다.' },
+  { no: 15, text: '코치가 나에게 큰소리치거나 질책을 해도 나는 기분 상하지 않고 나의 잘못을 수정한다.' },
+  { no: 16, text: '시합에서 예상하지 못한 상황이 일어나도 나는 아주 잘 처리한다.' },
+  { no: 17, text: '상황이 나에게 불리하게 되더라도 나는 침착하라고 스스로에게 말을 하며, 이것은 실제로 나를 침착하게 해준다.' },
+  { no: 18, text: '시합 중에 압박감이 커지면 커질수록 나는 이를 더욱더 즐긴다.' },
+  { no: 19, text: '시합을 하는 도중에 나는 실수하거나 제대로 못할까봐 걱정한다.' },
+  { no: 20, text: '나는 시합 전에 미리 준비된 시합전략을 가지고 있다.' },
+  { no: 21, text: '너무 긴장하고 있다고 느낄 때 나는 신속히 몸의 긴장을 풀고 침착하게 할 수 있다.' },
+  { no: 22, text: '압박받는 상황을 나는 도전이라고 생각하고 기꺼이 받아들인다.' },
+  { no: 23, text: '내가 실패하거나 시합이 잘 풀리지 않을 경우 발생될 일을 생각하고 상상한다.' },
+  { no: 24, text: '상황이 어떻게 변하더라도 나는 정서적 안정을 유지한다.' },
+  { no: 25, text: '나는 어떤 사물이나 사람에게 쉽게 내 주위를 집중시킬 수 있다.' },
+  { no: 26, text: '내 목표달성에 실패를 하면 나는 더욱더 열심히 한다.' },
+  { no: 27, text: '나는 지도자의 충고나 지도를 주의깊게 받아들여 내 기술을 향상시킨다.' },
+  { no: 28, text: '긴장과 압박받는 상황에서는 주의집중이 더 잘되기 때문에 실수를 더 적게 한다.' },
+];
+
+const ACSI28_LIKERT = [
+  { v: 1, label: '전혀아니다' },
+  { v: 2, label: '가끔그렇다' },
+  { v: 3, label: '자주그렇다' },
+  { v: 4, label: '항상그렇다' },
+];
+
+const ACSI28_SUBSCALES = [
+  { key: 'adversity', name: '역경에 대한 대처', items: [25, 26, 27, 28], reverse: [], positive: true,
+    def: '실패나 어려운 상황에서도 포기하지 않고 다시 노력하며 집중하는 능력.',
+    high: '역경 속에서도 집중력을 잃지 않고 더 노력하는 편이에요.',
+    low: '어려운 상황에서 대처가 다소 약한 편이에요.',
+    tip: '실패 직후 "이번엔 무엇을 다르게 할까"를 짧게 되짚는 루틴을 만들어보세요.' },
+  { key: 'peaking', name: '압박감 해소', items: [7, 17, 20, 23], reverse: [7, 23], positive: true,
+    def: '압박 상황에서 스스로를 침착하게 만들고 최고 기량을 발휘하는 능력.',
+    high: '압박 상황에서도 스스로를 잘 다스리며 침착함을 유지해요.',
+    low: '압박 상황에서 다른 사람의 시선이나 실패 상상에 영향을 많이 받는 편이에요.',
+    tip: '시합 전 스스로에게 건네는 침착 신호(문구·호흡)를 미리 정해 반복 연습해보세요.' },
+  { key: 'goalSetting', name: '목표설정 / 심리적 준비', items: [9, 10, 11, 12], reverse: [10, 12], positive: true,
+    def: '시합에 대한 자신감과 심리적 준비, 압박을 다스리는 정도.',
+    high: '시합에 대한 자신감과 심리적 준비가 잘 되어 있는 편이에요.',
+    low: '시합 결과에 대한 걱정이나 지적에 대한 감정 반응이 큰 편이에요.',
+    tip: '지적을 받았을 때 바로 반응하기보다 한 박자 쉬고 받아들이는 연습을 해보세요.' },
+  { key: 'concentration', name: '집중력', items: [15, 16, 22, 24], reverse: [], positive: true,
+    def: '예상치 못한 상황이나 지적에도 흔들리지 않고 정서적 안정을 유지하는 능력.',
+    high: '예상 밖의 상황에서도 정서적으로 안정되고 유연하게 대처하는 편이에요.',
+    low: '예상치 못한 상황이 생기면 다소 흔들리는 편이에요.',
+    tip: '훈련 중 일부러 변수를 넣어보고 그에 적응하는 연습을 해보세요.' },
+  { key: 'freedomWorry', name: '시합 걱정의 자유', items: [6, 14, 18, 19], reverse: [19], positive: true,
+    def: '실수나 결과에 대한 걱정 없이 스스로 최선을 다하고 압박을 즐기는 정도.',
+    high: '실수에 대한 걱정 없이 스스로 최선을 다하는 편이에요.',
+    low: '실수하거나 제대로 못할까봐 걱정이 큰 편이에요.',
+    tip: '"완벽"이 아니라 "최선"에 초점을 맞추는 혼잣말로 바꿔보세요.' },
+  { key: 'confidence', name: '자신감과 성취동기', items: [3, 4, 8, 13], reverse: [3], positive: true,
+    def: '스스로 목표를 세우고 계획적으로 준비하며 집중을 유지하는 성취 동기.',
+    high: '스스로 목표를 세우고 계획적으로 준비하는 편이에요.',
+    low: '코치의 피드백을 개인적으로 받아들여 감정이 앞서는 편이에요.',
+    tip: '피드백은 "나"에 대한 평가가 아니라 "동작"에 대한 정보로 받아들이는 연습을 해보세요.' },
+  { key: 'coachability', name: '자기코칭 행동', items: [1, 2, 5, 21], reverse: [], positive: true,
+    def: '지도자의 조언을 잘 받아들이고 스스로 목표를 세워 실천하는 태도.',
+    high: '지도자의 조언을 잘 받아들이고 스스로 목표를 세워 실천하는 편이에요.',
+    low: '스스로 목표를 세우거나 조언을 받아들이는 데 어려움이 있는 편이에요.',
+    tip: '훈련 후 지도자 피드백을 한 줄로 메모하고 다음 훈련에 적용해보는 루틴을 만들어보세요.' },
+];
+
+const ACSI28_TEST = {
+  id: 'acsi28',
+  name: '스포츠 대처기술 검사지(ACSI-28)',
+  items: ACSI28_ITEMS,
+  likert: ACSI28_LIKERT,
+  scaleMax: 4,
+  minVal: 1,
+  subscales: ACSI28_SUBSCALES,
+};
+
+/* ============ 자기관리 검사지 ============ */
+const SELFMGMT_ITEMS = [
+  { no: 1, text: '부족한 점을 개인 연습한다.' },
+  { no: 2, text: '동료들과 원만한 대인관계를 유지한다.' },
+  { no: 3, text: '규칙적으로 훈련한다.' },
+  { no: 4, text: '항상 긍정적으로 생각한다.' },
+  { no: 5, text: '평소 몸을 아낀다.' },
+  { no: 6, text: '개인훈련을 한다.' },
+  { no: 7, text: '자신감을 가지고 운동한다.' },
+  { no: 8, text: '무엇이든 할 수 있다는 생각을 가지고 있다.' },
+  { no: 9, text: '평소에 체중 조절을 한다.' },
+  { no: 10, text: '선후배에게 잘 한다.' },
+  { no: 11, text: '수면을 조절한다.' },
+  { no: 12, text: '윗사람들에게 항상 예의를 갖춘다.' },
+  { no: 13, text: '시합전에 음식을 조절한다.' },
+  { no: 14, text: '내 자신을 믿는다.' },
+  { no: 15, text: '팀 동료들과 사이좋게 지낸다.' },
+  { no: 16, text: '잠을 충분히 잔다.' },
+  { no: 17, text: '항상 좋은 인상을 주기위해 노력한다.' },
+  { no: 18, text: '체력훈련을 열심히 한다.' },
+];
+
+const FIVEPT_LIKERT = [
+  { v: 1, label: '전혀아니다' },
+  { v: 2, label: '아니다' },
+  { v: 3, label: '보통이다' },
+  { v: 4, label: '그렇다' },
+  { v: 5, label: '매우그렇다' },
+];
+
+const SELFMGMT_SUBSCALES = [
+  { key: 'interpersonal', name: '대인관리', items: [2, 10, 12, 15, 17], reverse: [], positive: true,
+    def: '동료·선후배·주변 사람들과의 관계를 원만하게 관리하는 정도.',
+    high: '주변 사람들과의 관계를 잘 관리하는 편이에요.',
+    low: '대인관계 관리에 좀 더 신경 쓰면 좋을 편이에요.',
+    tip: '하루에 한 명, 짧은 인사나 안부를 건네는 것부터 시작해보세요.' },
+  { key: 'training', name: '훈련관리', items: [1, 3, 6, 18], reverse: [], positive: true,
+    def: '규칙적이고 계획적으로 훈련을 관리하는 정도.',
+    high: '규칙적으로 훈련을 관리하는 습관이 잘 잡혀 있어요.',
+    low: '훈련 관리가 다소 불규칙한 편이에요.',
+    tip: '주간 훈련 계획을 미리 적어두고 완료 여부를 체크해보세요.' },
+  { key: 'mental', name: '정신관리', items: [4, 7, 8, 14], reverse: [], positive: true,
+    def: '긍정적 사고와 자기 확신 등 정신적인 면을 관리하는 정도.',
+    high: '긍정적인 생각과 자기 확신을 잘 유지하는 편이에요.',
+    low: '자기 확신이나 긍정적 사고가 다소 부족한 편이에요.',
+    tip: '하루를 마무리하며 잘한 점 한 가지를 적어보는 습관을 만들어보세요.' },
+  { key: 'body', name: '몸관리', items: [5, 9, 11, 13, 16], reverse: [], positive: true,
+    def: '수면·체중·식이 등 몸 상태를 관리하는 정도.',
+    high: '수면·체중·식이 등 몸 관리를 잘 하는 편이에요.',
+    low: '몸 관리(수면·체중·식이)에 좀 더 신경 쓰면 좋을 편이에요.',
+    tip: '수면 시간을 먼저 정해두고 지키는 것부터 시작해보세요.' },
+];
+
+const SELFMGMT_TEST = {
+  id: 'selfmgmt',
+  name: '자기관리 검사지',
+  items: SELFMGMT_ITEMS,
+  likert: FIVEPT_LIKERT,
+  scaleMax: 5,
+  minVal: 1,
+  subscales: SELFMGMT_SUBSCALES,
+};
+
+/* ============ 스포츠자신감 검사지 ============ */
+const SPORTCONF_ITEMS = [
+  { no: 1, text: '다른 선수보다 운동을 잘 했을 때 자신감이 생긴다.' },
+  { no: 2, text: '사람들이 나를 보고 믿음직한 선수라고 말할 때 자신감이 생긴다.' },
+  { no: 3, text: '상대편보다 경기를 더 잘 했을 때 자신감이 생긴다.' },
+  { no: 4, text: '상대방보다 더 우수하다는 것을 보여주었을 때 자신감이 생긴다.' },
+  { no: 5, text: '팀 동료로부터 격려나 칭찬을 받았을 때 자신감이 생긴다.' },
+  { no: 6, text: '코치와 가족의 격려가 있을 때 자신감이 생긴다.' },
+  { no: 7, text: '코치로부터 칭찬을 받았을 때 자신감이 생긴다.' },
+  { no: 8, text: '유능한 지도자 밑에서 운동을 할 때 자신감이 생긴다.' },
+  { no: 9, text: '지도자의 예측이 믿을만할 때 자신감이 생긴다.' },
+  { no: 10, text: '지도자 훌륭한 사람이라고 느껴 질 때 자신감이 생긴다.' },
+  { no: 11, text: '지도자의 결정에 믿음이 갈 때 자신감이 생긴다.' },
+  { no: 12, text: '운동하는 것에 집중이 잘될 때 자신감이 생긴다.' },
+  { no: 13, text: '운동기술을 향상 시켰을 때 자신감이 생긴다.' },
+  { no: 14, text: '나의 목표에 집중이 잘될 때 자신감이 생긴다.' },
+  { no: 15, text: '나는 신체적・정신적으로 시합을 잘 준비했을 때 자신감이 생긴다.' },
+];
+
+const SPORTCONF_SUBSCALES = [
+  { key: 'proof', name: '능력입증', items: [1, 2, 3, 4], reverse: [], positive: true,
+    def: '남들보다 뛰어난 수행을 보였을 때 느끼는 자신감의 원천.',
+    high: '실력을 입증했을 때 자신감을 크게 얻는 편이에요.',
+    low: '능력 입증이 자신감으로 잘 이어지지 않는 편이에요.',
+    tip: '작은 성공(연습 중 성공한 시도)도 스스로 인정하고 기록해보세요.' },
+  { key: 'socialSupport', name: '사회적지지', items: [5, 6, 7], reverse: [], positive: true,
+    def: '동료·코치·가족의 격려와 지지에서 느끼는 자신감의 원천.',
+    high: '주변의 격려와 지지에서 자신감을 잘 얻는 편이에요.',
+    low: '주변의 격려가 자신감으로 잘 이어지지 않는 편이에요.',
+    tip: '받은 응원이나 칭찬을 그 순간에 온전히 받아들이는 연습을 해보세요.' },
+  { key: 'coachLeadership', name: '코치지도력', items: [8, 9, 10, 11], reverse: [], positive: true,
+    def: '지도자에 대한 신뢰에서 느끼는 자신감의 원천.',
+    high: '지도자에 대한 신뢰가 자신감으로 잘 이어지는 편이에요.',
+    low: '지도자에 대한 신뢰가 자신감으로 잘 이어지지 않는 편이에요.',
+    tip: '지도자와 훈련 방향에 대해 짧게라도 대화하는 시간을 가져보세요.' },
+  { key: 'readiness', name: '신체정신적준비', items: [12, 13, 14, 15], reverse: [], positive: true,
+    def: '집중력, 기술 향상, 시합 준비 상태에서 느끼는 자신감의 원천.',
+    high: '준비가 잘 되었다는 느낌에서 자신감을 잘 얻는 편이에요.',
+    low: '준비 상태에서 오는 자신감이 다소 약한 편이에요.',
+    tip: '시합 전 체크리스트(몸 상태·기술·전략)를 만들어 준비 상태를 스스로 확인해보세요.' },
+];
+
+const SPORTCONF_TEST = {
+  id: 'sportconf',
+  name: '스포츠자신감 검사지',
+  items: SPORTCONF_ITEMS,
+  likert: FIVEPT_LIKERT,
+  scaleMax: 5,
+  minVal: 1,
+  subscales: SPORTCONF_SUBSCALES,
+};
+
+/* ============ 운동지속 검사지 ============ */
+const EXPERSIST_ITEMS = [
+  { no: 1, text: '나는 운동할 때 자신감이 있다.' },
+  { no: 2, text: '나는 남들보다 잘 하는 운동이나 스포츠가 한 개 있다.' },
+  { no: 3, text: '나는 운동이 어렵고 힘들어도 잘 이겨낸다.' },
+  { no: 4, text: '나는 운동 할 때 승부욕이 강하다.' },
+  { no: 5, text: '1주일에 2~3회 운동 한다.' },
+  { no: 6, text: '나는 운동하는 것이 일상생활에서 우선순위가 높다.' },
+  { no: 7, text: '나의 취미생활은 운동이다.' },
+  { no: 8, text: '나는 운동하는데 경제적으로 부담은 없다.' },
+  { no: 9, text: '운동하는데 가족들이 도움을 준다.' },
+  { no: 10, text: '나는 운동하는데 시간적인 여유가 있다.' },
+  { no: 11, text: '나는 운동하기에 운동장소나 운동시설적인 면에서 편리하다.' },
+  { no: 12, text: '나는 체력을 향상시키기 위한 운동계획이나 프로그램이 있다.' },
+  { no: 13, text: '나는 운동을 잘 하기 위해서 책이나 비디오 등을 찾아본 적이 있다.' },
+  { no: 14, text: '나는 운동을 주위 사람들에게 권장 한다.' },
+  { no: 15, text: '주위에 운동을 권유하는 사람들이 있다.' },
+  { no: 16, text: '나는 운동을 같이 할 사람(들)이 있다.' },
+  { no: 17, text: '나는 운동을 하면서 사람을 잘 사귀는 편이다.' },
+];
+
+const EXPERSIST_SUBSCALES = [
+  { key: 'ability', name: '운동능력', items: [1, 2, 3, 4], reverse: [], positive: true,
+    def: '운동에 대한 자신감과 승부욕, 어려움을 이겨내는 능력.',
+    high: '운동 능력에 대한 자신감과 승부욕이 좋은 편이에요.',
+    low: '운동 능력에 대한 자신감이 다소 낮은 편이에요.',
+    tip: '내가 남들보다 잘하는 동작 하나를 정해두고 자주 떠올려보세요.' },
+  { key: 'habit', name: '운동습관', items: [5, 6, 7], reverse: [], positive: true,
+    def: '운동을 일상 속 우선순위로 두고 꾸준히 실천하는 습관.',
+    high: '운동을 꾸준히 실천하는 습관이 잘 잡혀 있어요.',
+    low: '운동 습관이 아직 자리잡지 않은 편이에요.',
+    tip: '요일과 시간을 정해두고 "운동 약속"처럼 지켜보세요.' },
+  { key: 'environment', name: '운동환경', items: [8, 9, 10, 11], reverse: [], positive: true,
+    def: '경제적 여건, 가족 지원, 시간·장소 등 운동을 지속할 환경적 여건.',
+    high: '운동을 지속하기 좋은 환경적 여건을 갖추고 있는 편이에요.',
+    low: '운동을 지속하기에 환경적 어려움이 있는 편이에요.',
+    tip: '가장 큰 장애 요인(시간/장소/경제) 한 가지를 정해 작은 대안을 찾아보세요.' },
+  { key: 'interest', name: '운동관심', items: [12, 13, 14], reverse: [], positive: true,
+    def: '체력 향상 계획을 세우고 정보를 찾아보는 등 운동에 대한 관심도.',
+    high: '운동에 대한 관심과 정보 탐색이 활발한 편이에요.',
+    low: '운동에 대한 관심이 다소 낮은 편이에요.',
+    tip: '관심 있는 종목의 훈련 영상이나 자료를 한 주에 하나씩 찾아보세요.' },
+  { key: 'friends', name: '운동친구', items: [15, 16, 17], reverse: [], positive: true,
+    def: '함께 운동할 사람이 있고 운동을 통해 관계를 잘 맺는 정도.',
+    high: '함께 운동할 사람들이 있고 관계를 잘 맺는 편이에요.',
+    low: '함께 운동할 사람이 부족한 편이에요.',
+    tip: '같이 운동할 사람을 한 명 정해서 함께하는 시간을 만들어보세요.' },
+];
+
+const EXPERSIST_TEST = {
+  id: 'expersist',
+  name: '운동지속 검사지',
+  items: EXPERSIST_ITEMS,
+  likert: FIVEPT_LIKERT,
+  scaleMax: 5,
+  minVal: 1,
+  subscales: EXPERSIST_SUBSCALES,
+};
+
+/* ============ 스포츠 심상능력 질문지 (SIAQ) ============ */
+const SIAQ_ITEMS = [
+  { no: 1, text: '내 머릿속에서 계획과 전략을 세울 수 있다.' },
+  { no: 2, text: '뭔가 잘 풀리지 않는 경우에도 100% 노력하는 것을 상상할 수 있다.' },
+  { no: 3, text: '특정 기술을 개선하는 것을 상상할 수 있다.' },
+  { no: 4, text: '스포츠를 하는 동안 긍정적인 감정을 느낄 수 있다.' },
+  { no: 5, text: '내가 메달을 획득했을 때의 모습을 상상할 수 있다.' },
+  { no: 6, text: '대안적 계획 및 전략을 상상할 수 있다.' },
+  { no: 7, text: '내 스포츠와 관련된 기대와 흥분을 상상할 수 있다.' },
+  { no: 8, text: '특정한 기술이 향상되는 것을 상상할 수 있다.' },
+  { no: 9, text: '우승자로서 인터뷰 하는 것을 상상할 수 있다.' },
+  { no: 10, text: '실수 후에도 긍정적인 마음을 유지하는 것을 상상할 수 있다.' },
+  { no: 11, text: '수행과 관련된 흥분감을 상상할 수 있다.' },
+  { no: 12, text: '잘못된 신체적 기술을 고치는 상상을 할 수 있다.' },
+  { no: 13, text: '새로운 시합계획 세우는 것을 상상할 수 있다.' },
+  { no: 14, text: '내가 우승하는 것을 상상할 수 있다.' },
+  { no: 15, text: '힘든 시합 중에도 자신감을 유지하는 것을 상상할 수 있다.' },
+];
+
+const SIAQ_LIKERT = [
+  { v: 1, label: '매우어렵다' },
+  { v: 2, label: '어렵다' },
+  { v: 3, label: '조금어렵다' },
+  { v: 4, label: '보통이다' },
+  { v: 5, label: '조금쉽다' },
+  { v: 6, label: '쉽다' },
+  { v: 7, label: '매우쉽다' },
+];
+
+const SIAQ_SUBSCALES = [
+  { key: 'skill', name: '기술 심상능력', items: [3, 8, 12], reverse: [], positive: true,
+    def: '특정 기술을 개선·향상하는 장면을 머릿속으로 그려보는 능력.',
+    high: '기술 개선 장면을 생생하게 상상할 수 있는 편이에요.',
+    low: '기술 관련 심상이 잘 그려지지 않는 편이에요.',
+    tip: '훈련 직후, 방금 고치려던 동작이 잘 되는 모습을 짧게 상상해보세요.' },
+  { key: 'strategy', name: '전략 심상능력', items: [1, 6, 13], reverse: [], positive: true,
+    def: '경기 계획과 전략, 대안을 머릿속으로 세워보는 능력.',
+    high: '계획과 전략을 머릿속으로 잘 그려보는 편이에요.',
+    low: '전략을 상상으로 미리 그려보는 것이 어려운 편이에요.',
+    tip: '시합 전날, 예상 상황별 대응 전략을 머릿속으로 리허설해보세요.' },
+  { key: 'goal', name: '목표 심상능력', items: [5, 9, 14], reverse: [], positive: true,
+    def: '목표를 달성한 순간(우승, 메달 등)을 생생하게 상상하는 능력.',
+    high: '목표 달성 장면을 생생하게 상상할 수 있는 편이에요.',
+    low: '목표 달성 장면을 상상하는 것이 잘 안 되는 편이에요.',
+    tip: '목표를 이룬 순간의 장면을 구체적인 디테일과 함께 떠올려보세요.' },
+  { key: 'affect', name: '정서 심상능력', items: [4, 7, 11], reverse: [], positive: true,
+    def: '경기와 관련된 감정(흥분, 기대, 긍정적 느낌)을 상상하는 능력.',
+    high: '경기와 관련된 감정을 생생하게 느끼며 상상할 수 있는 편이에요.',
+    low: '경기 관련 감정을 상상으로 불러오는 것이 어려운 편이에요.',
+    tip: '심상 훈련 시 장면뿐 아니라 그때 느낄 감정까지 함께 떠올려보세요.' },
+  { key: 'mastery', name: '숙달 심상능력', items: [2, 10, 15], reverse: [], positive: true,
+    def: '어려운 상황에서도 긍정적인 마음과 자신감을 유지하는 모습을 상상하는 능력.',
+    high: '어려운 상황에서도 침착함을 유지하는 모습을 잘 상상하는 편이에요.',
+    low: '힘든 상황을 이겨내는 모습을 상상하는 것이 어려운 편이에요.',
+    tip: '가장 힘들었던 순간을 떠올리고, 그걸 침착하게 이겨내는 장면으로 다시 그려보세요.' },
+];
+
+const SIAQ_TEST = {
+  id: 'siaq',
+  name: '스포츠 심상능력 질문지',
+  items: SIAQ_ITEMS,
+  likert: SIAQ_LIKERT,
+  scaleMax: 7,
+  minVal: 1,
+  subscales: SIAQ_SUBSCALES,
+};
+
+/* ============ 심판판정인식 검사지 ============ */
+const REFEREE_ITEMS = [
+  { no: 1, text: '참가한 경기마다 심판들은 동일한 판정기준에 따라 심판을 본다.' },
+  { no: 2, text: '심판판정에 대해 전반적으로 신속하게 이루어진다.' },
+  { no: 3, text: '주심은 동일한 판정기준에 일관성 있게 규칙을 적용한다.' },
+  { no: 4, text: '경기 시 심판의 심판판정은 선수들에게 신뢰감을 준다.' },
+  { no: 5, text: '최근 참가한 경기에서 불리한 판정이 없었다고 생각한다.' },
+  { no: 6, text: '승, 패 시 신속하게 결정을 내린다.' },
+  { no: 7, text: '심판은 동일한 기준에 따라 점수를 표출한다.' },
+  { no: 8, text: '경기 시 심판은 소신 있는 태도로 심판을 본다.' },
+  { no: 9, text: '최근 참가한 경기에서 유리한 판정이 없었다고 생각한다.' },
+  { no: 10, text: '반칙 시 신속하게 결정을 내린다.' },
+  { no: 11, text: '자신과 동일한 반칙을 상대방이 했을 경우 일관되게 판정을 내린다.' },
+  { no: 12, text: '경기 시 심판은 자신감 있는 태도로 심판을 본다.' },
+  { no: 13, text: '경기 후 공정한 심판판정을 하였다고 항상 생각한다.' },
+  { no: 14, text: '정확한 판정이 이루어지도록 신속하게 적절한 위치로 심판이 이동한다.' },
+  { no: 15, text: '판정에 대해 지도자가 항의하더라도 일관되게 심판을 본다.' },
+  { no: 16, text: '경기 시 심판의 품위 있는 행동들이 선수 및 지도자들에게 신뢰감을 주고 있다.' },
+];
+
+const REFEREE_SUBSCALES = [
+  { key: 'fairness', name: '공정성', items: [1, 5, 9, 13], reverse: [], positive: true,
+    def: '심판이 동일한 기준을 공정하게 적용한다고 느끼는 정도.',
+    high: '심판판정이 공정하다고 느끼는 편이에요.',
+    low: '심판판정의 공정성에 의문을 느끼는 편이에요.',
+    tip: '판정에 대한 생각을 훈련일지에 기록해 감독·코치와 객관적으로 나눠보세요.' },
+  { key: 'promptness', name: '신속성', items: [2, 6, 10, 14], reverse: [], positive: true,
+    def: '판정이 신속하게 이루어진다고 느끼는 정도.',
+    high: '판정이 신속하게 이루어진다고 느끼는 편이에요.',
+    low: '판정 속도에 아쉬움을 느끼는 편이에요.',
+    tip: '판정 속도는 통제할 수 없는 요인이니, 판정 이후 대응(다음 플레이 준비)에 집중해보세요.' },
+  { key: 'consistency', name: '일관성', items: [3, 7, 11, 15], reverse: [], positive: true,
+    def: '판정 기준이 상황과 상대에 관계없이 일관되게 적용된다고 느끼는 정도.',
+    high: '판정 기준이 일관되게 적용된다고 느끼는 편이에요.',
+    low: '판정 일관성에 의문을 느끼는 편이에요.',
+    tip: '판정에 흔들리지 않고 내가 할 수 있는 플레이에 집중하는 루틴을 연습해보세요.' },
+  { key: 'reliability', name: '신뢰성', items: [4, 8, 12, 16], reverse: [], positive: true,
+    def: '심판의 태도와 행동에서 전반적인 신뢰를 느끼는 정도.',
+    high: '심판에 대한 전반적인 신뢰가 높은 편이에요.',
+    low: '심판에 대한 신뢰가 다소 낮은 편이에요.',
+    tip: '경기 전 "판정은 내가 통제할 수 없는 영역"이라고 되뇌는 루틴을 만들어보세요.' },
+];
+
+const REFEREE_TEST = {
+  id: 'referee',
+  name: '심판판정인식 검사지',
+  items: REFEREE_ITEMS,
+  likert: FIVEPT_LIKERT,
+  scaleMax: 5,
+  minVal: 1,
+  subscales: REFEREE_SUBSCALES,
+};
+
+/* ============ 경기스트레스 검사지 ============ */
+const MATCHSTRESS_ITEMS = [
+  { no: 1, text: '나는 나의 실수로 인해 경기에서 패할까봐 스트레스 받는다.' },
+  { no: 2, text: '나는 경기 중에서 나의 기술이 발휘 되지 않을까봐 스트레스 받는다.' },
+  { no: 3, text: '나는 경기를 반드시 이겨야 된다는 부담감 때문에 스트레스 받는다.' },
+  { no: 4, text: '나는 경기가 제대로 풀리지 않을까봐 걱정 된다.' },
+  { no: 5, text: '나는 경기의 승패에 대한 불확실성 때문에 스트레스를 받는다.' },
+  { no: 6, text: '나는 판정이 공정하게 이루어지지 않을까봐 걱정된다.' },
+  { no: 7, text: '나는 경기 중 부정확한 판정을 받으면 당황하고 경기가 안 풀린다.' },
+  { no: 8, text: '나의 득점을 심판이 인정해 주지 않을 때 당황하고 경기가 잘 안 풀린다.' },
+  { no: 9, text: '나는 경기 중 심판판정이 공정하지 않으면 스트레스 받는다.' },
+  { no: 10, text: '나는 경기 중 오심이나 사심으로 피해를 볼까봐 스트레스 받는다.' },
+];
+
+const MATCHSTRESS_SUBSCALES = [
+  { key: 'competition', name: '경기스트레스', items: [1, 2, 3, 4, 5], reverse: [], positive: false,
+    def: '경기 결과·수행에 대한 부담과 불확실성에서 오는 스트레스(점수가 낮을수록 좋음).',
+    high: '경기 결과와 수행에 대한 부담을 크게 느끼는 편이에요.',
+    low: '경기 부담을 비교적 잘 다스리는 편이에요.',
+    tip: '결과보다 그 순간의 과정 목표에 집중하는 연습을 해보세요.' },
+  { key: 'referee', name: '심판스트레스', items: [6, 7, 8, 9, 10], reverse: [], positive: false,
+    def: '판정에 대한 걱정과 그로 인한 영향에서 오는 스트레스(점수가 낮을수록 좋음).',
+    high: '판정에 대한 걱정이 경기력에 영향을 크게 주는 편이에요.',
+    low: '판정과 관련된 걱정을 비교적 잘 다스리는 편이에요.',
+    tip: '판정에 대한 반응 대신, 다음 플레이로 빠르게 전환하는 루틴을 연습해보세요.' },
+];
+
+const MATCHSTRESS_TEST = {
+  id: 'matchstress',
+  name: '경기스트레스 검사지',
+  items: MATCHSTRESS_ITEMS,
+  likert: FIVEPT_LIKERT,
+  scaleMax: 5,
+  minVal: 1,
+  subscales: MATCHSTRESS_SUBSCALES,
+};
+
+/* ============ 운동열정 검사지 ============ */
+const PASSION_ITEMS = [
+  { no: 1, text: '운동은 나에게 다양한 경험을 하게끔 해 준다.' },
+  { no: 2, text: '운동에서 얻는 새로운 것들은 나에게 그 이상의 가치를 준다.' },
+  { no: 3, text: '운동은 나에게 기억에 남을만한 경험을 가져다준다.' },
+  { no: 4, text: '운동은 나의 가치를 보여준다.' },
+  { no: 5, text: '나의 삶에서 운동은 다른 활동과 조화를 이룬다.' },
+  { no: 6, text: '운동에 대한 나의 열정은 내가 잘 통제할 수 있다.' },
+  { no: 7, text: '나는 운동에 푹 빠져 있다.' },
+  { no: 8, text: '나는 운동 없이 살 수 없다.' },
+  { no: 9, text: '나는 운동에 대한 충동이 매우 강하여 운동을 멈출 수 없다.' },
+  { no: 10, text: '운동이 없는 나의 삶을 상상하기 어렵다.' },
+  { no: 11, text: '나는 정서적으로 운동에 의존하고 있다.' },
+  { no: 12, text: '나는 운동에 대한 욕구를 통제하기 힘들다.' },
+  { no: 13, text: '나는 운동에 거의 집착하고 있다.' },
+  { no: 14, text: '운동에 따라 내 기분 상태가 좌우된다.' },
+];
+
+const SEVENPT_LIKERT = [
+  { v: 1, label: '매우아니다' },
+  { v: 2, label: '아니다' },
+  { v: 3, label: '아닌편이다' },
+  { v: 4, label: '보통이다' },
+  { v: 5, label: '그런편이다' },
+  { v: 6, label: '그렇다' },
+  { v: 7, label: '매우그렇다' },
+];
+
+const PASSION_SUBSCALES = [
+  { key: 'harmonious', name: '조화열정', items: [1, 2, 3, 4, 5, 6, 7], reverse: [], positive: true,
+    def: '삶의 다른 영역과 조화를 이루며 스스로 통제 가능한 건강한 열정.',
+    high: '운동에 대한 열정이 삶과 조화를 이루며 건강하게 유지되는 편이에요.',
+    low: '운동에 대한 조화로운 열정이 다소 낮은 편이에요.',
+    tip: '운동이 삶의 다른 부분(휴식, 관계 등)과 균형을 이루고 있는지 점검해보세요.' },
+  { key: 'obsessive', name: '강박열정', items: [8, 9, 10, 11, 12, 13, 14], reverse: [], positive: false,
+    def: '스스로 통제하기 어렵고 정서적으로 의존하게 되는 강박적인 열정(점수가 낮을수록 건강함).',
+    high: '운동에 대한 몰입이 통제하기 어려운 수준으로 강한 편이에요.',
+    low: '운동에 지나치게 의존하지 않고 균형을 잘 유지하는 편이에요.',
+    tip: '운동을 쉬어도 괜찮은 날을 의도적으로 만들어보는 연습을 해보세요. 몰입이 일상에 지장을 줄 정도라면 전문가와 상담을 권해드려요.' },
+];
+
+const PASSION_TEST = {
+  id: 'passion',
+  name: '운동열정 검사지',
+  items: PASSION_ITEMS,
+  likert: SEVENPT_LIKERT,
+  scaleMax: 7,
+  minVal: 1,
+  subscales: PASSION_SUBSCALES,
+};
+
+/* ============ 운동슬럼프 검사지 ============ */
+const SLUMP_ITEMS = [
+  { no: 1, text: '경기 시 자신의 실력을 제대로 보여주지 못한다.' },
+  { no: 2, text: '훈련 시 기술적인 부분에 문제가 자주 생긴다.' },
+  { no: 3, text: '새로운 기술습득에 진전이 없다.' },
+  { no: 4, text: '장기간 운동기록(경기력) 향상에 진전이 없다.' },
+  { no: 5, text: '감독, 코치들의 지도나 지시사항을 이행하는데 어려움을 겪는다.' },
+  { no: 6, text: '기본기의 변형과 함께 자주 실수를 한다.' },
+  { no: 7, text: '자신이 왜 지금 이러고 있는지(운동을 하는지) 회의감을 느낀다.' },
+  { no: 8, text: '마음이 무겁고 주변 모든 것이 중요치 않다고 느껴진다.' },
+  { no: 9, text: '훈련의욕이 떨어진다.' },
+  { no: 10, text: '자신 주변의 모든 것이 스트레스로 느껴진다.' },
+  { no: 11, text: '신경이 날카로워지고 만사가 귀찮다.' },
+  { no: 12, text: '주변 사람들이 미워지기 시작하고 거리감이 느껴진다.' },
+  { no: 13, text: '감독 또는 코치의 지도방식이 싫어진다.' },
+  { no: 14, text: '운동을 포기할 생각이 든다.' },
+  { no: 15, text: '수면장애가 동반된다.' },
+  { no: 16, text: '식욕이 떨어진다.' },
+  { no: 17, text: '먹은 음식이 소화가 잘 안 된다.' },
+  { no: 18, text: '숙박조건이 문제가 된다.' },
+  { no: 19, text: '식사조건이 문제가 된다.' },
+  { no: 20, text: '훈련시설의 영향을 받는다.' },
+  { no: 21, text: '훈련장비의 영향을 받는다.' },
+];
+
+const SLUMP_SUBSCALES = [
+  { key: 'skill', name: '기술요인', items: [1, 2, 3, 4, 5, 6], reverse: [], positive: false,
+    def: '경기력·기술 습득에서 정체나 실수가 반복되는 정도(점수가 낮을수록 좋음).',
+    high: '기술적인 정체나 실수가 반복되고 있는 편이에요.',
+    low: '기술 면에서 큰 정체 없이 안정적인 편이에요.',
+    tip: '기본기 한 가지로 범위를 좁혀 짧고 반복적인 연습으로 감각을 되찾아보세요.' },
+  { key: 'psych', name: '심리요인', items: [7, 8, 9, 10, 11, 12, 13, 14], reverse: [], positive: false,
+    def: '의욕 저하, 회의감, 예민함 등 심리적인 슬럼프 증상의 정도(점수가 낮을수록 좋음).',
+    high: '심리적으로 지쳐있거나 의욕이 많이 떨어진 상태로 보여요.',
+    low: '심리적으로 비교적 안정적인 상태예요.',
+    tip: '혼자 감당하기보다 코치·동료·전문가와 지금 상태를 이야기해보는 걸 권해드려요.' },
+  { key: 'physical', name: '신체요인', items: [15, 16, 17], reverse: [], positive: false,
+    def: '수면·식욕·소화 등 신체 컨디션 저하의 정도(점수가 낮을수록 좋음).',
+    high: '수면·식욕 등 신체 컨디션이 저하된 상태로 보여요.',
+    low: '신체 컨디션이 비교적 양호한 편이에요.',
+    tip: '수면·식사 리듬을 우선 회복하는 데 집중해보세요. 증상이 지속되면 전문가 상담을 권해드려요.' },
+  { key: 'environment', name: '환경요인', items: [18, 19, 20, 21], reverse: [], positive: false,
+    def: '숙박·식사·훈련시설·장비 등 환경적 요인의 영향 정도(점수가 낮을수록 좋음).',
+    high: '훈련 환경(숙박·식사·시설·장비)의 영향을 크게 받고 있는 편이에요.',
+    low: '훈련 환경의 영향을 비교적 덜 받는 편이에요.',
+    tip: '개선 가능한 환경 요인이 있다면 코치·팀에 구체적으로 요청해보세요.' },
+];
+
+const SLUMP_TEST = {
+  id: 'slump',
+  name: '운동슬럼프 검사지',
+  items: SLUMP_ITEMS,
+  likert: FIVEPT_LIKERT,
+  scaleMax: 5,
+  minVal: 1,
+  subscales: SLUMP_SUBSCALES,
+};
+
+/* ============ 운동스트레스 검사지 ============ */
+// 원본 자료의 23문항 중 7·8번 문항은 어느 하위척도에도 배정되어 있지 않아 제외하고 1~21번으로 재번호했다.
+// 원래 22번 문항("솔로랭크 순위를 올리기 위해 새벽 늦게까지 게임을 할 때...")은 스포츠 스트레스 척도와
+// 무관한 내용이 섞여있던 오류로 보여, 같은 하위척도(개인시간 제약) 취지에 맞는 문항으로 대체했다(새 번호 20번).
+const EXSTRESS_ITEMS = [
+  { no: 1, text: '코치나 감독이 욕할 때 스트레스를 받는다.' },
+  { no: 2, text: '코치나 감독이 무시할 때 스트레스를 받는다.' },
+  { no: 3, text: '코치나 감독이 때릴 때 스트레스를 받는다.' },
+  { no: 4, text: '코치나 감독이 차별 대우를 할 때 스트레스를 받는다.' },
+  { no: 5, text: '코치나 감독이 잔소리할 때 스트레스를 받는다.' },
+  { no: 6, text: '코치나 감독이 이유없이 화를 낼 때 스트레스를 받는다.' },
+  { no: 7, text: '진로에 대한 고민 때문에 스트레스를 받는다.' },
+  { no: 8, text: '진로가 결정되지 않아서 스트레스를 받는다.' },
+  { no: 9, text: '프로팀에(프로팀에 계속 남아있지) 못갈 것 같아서 스트레스를 받는다.' },
+  { no: 10, text: '선수로 성공할 수 없을 것 같아서 스트레스를 받는다.' },
+  { no: 11, text: '컨디션이 나쁘거나 슬럼프에 빠졌을 때 스트레스를 받는다.' },
+  { no: 12, text: '게임에 대한 자신감을 잃었을 때 스트레스를 받는다.' },
+  { no: 13, text: '부상을 당했을 때 스트레스를 받는다.' },
+  { no: 14, text: '시합에서 실수를 했을 때 스트레스를 받는다.' },
+  { no: 15, text: '시합을 잘 못했을 때 스트레스를 받는다.' },
+  { no: 16, text: '게임이 내 맘대로 잘 되지 않아서 스트레스를 받는다.' },
+  { no: 17, text: '장기간의 합숙 때문에 스트레스를 받는다.' },
+  { no: 18, text: '휴가나 외출 외박이 짧아서 스트레스를 받는다.' },
+  { no: 19, text: '단체생활로 인해 개인행동이 제한될 때 스트레스를 받는다.' },
+  { no: 20, text: '나는 혼자만의 시간을 갖기 어려워서 스트레스를 받는다.' },
+  { no: 21, text: '여가시간을 누리지 못해서 스트레스를 받는다.' },
+];
+
+const EXSTRESS_SUBSCALES = [
+  { key: 'leadership', name: '지도력 불만', items: [1, 2, 3, 4, 5, 6], reverse: [], positive: false,
+    def: '코치·감독의 지도 방식에 대한 불만에서 오는 스트레스(점수가 낮을수록 좋음).',
+    high: '지도 방식에 대한 불만으로 인한 스트레스가 큰 편이에요.',
+    low: '지도 방식과 관련된 스트레스가 비교적 적은 편이에요.',
+    tip: '가능하다면 신뢰할 수 있는 사람을 통해 지도 방식에 대한 의견을 전달해보세요.' },
+  { key: 'career', name: '진로고민', items: [7, 8, 9, 10], reverse: [], positive: false,
+    def: '진로 결정·프로 진출 등에 대한 고민에서 오는 스트레스(점수가 낮을수록 좋음).',
+    high: '진로에 대한 고민과 스트레스가 큰 편이에요.',
+    low: '진로 관련 스트레스가 비교적 적은 편이에요.',
+    tip: '진로 고민은 혼자보다 지도자·가족과 구체적으로 이야기해보는 게 도움이 될 수 있어요.' },
+  { key: 'performance', name: '기능 및 경기내용 불만', items: [11, 12, 13, 14, 15, 16], reverse: [], positive: false,
+    def: '컨디션 저하, 부상, 실수 등 경기 내용에 대한 불만에서 오는 스트레스(점수가 낮을수록 좋음).',
+    high: '경기력·컨디션과 관련된 스트레스가 큰 편이에요.',
+    low: '경기력 관련 스트레스가 비교적 적은 편이에요.',
+    tip: '결과보다 그 경기에서 잘한 점 한 가지를 찾아보는 습관을 만들어보세요.' },
+  { key: 'personalTime', name: '개인시간 제약', items: [17, 18, 19, 20, 21], reverse: [], positive: false,
+    def: '합숙·단체생활로 인한 개인시간 부족에서 오는 스트레스(점수가 낮을수록 좋음).',
+    high: '개인시간 부족으로 인한 스트레스가 큰 편이에요.',
+    low: '개인시간과 관련된 스트레스가 비교적 적은 편이에요.',
+    tip: '짧더라도 온전히 나만을 위한 시간을 하루 중 정해두고 지켜보세요.' },
+];
+
+const EXSTRESS_TEST = {
+  id: 'exstress',
+  name: '운동스트레스 검사지',
+  items: EXSTRESS_ITEMS,
+  likert: FIVEPT_LIKERT,
+  scaleMax: 5,
+  minVal: 1,
+  subscales: EXSTRESS_SUBSCALES,
+};
+
+const TESTS = [
+  SPORT_SKILL_TEST, CSAI2_TEST, TOPS2_TEST, ATQN_TEST, CONNERS_TEST,
+  ACSI28_TEST, SELFMGMT_TEST, SPORTCONF_TEST, EXPERSIST_TEST, SIAQ_TEST,
+  REFEREE_TEST, MATCHSTRESS_TEST, PASSION_TEST, SLUMP_TEST, EXSTRESS_TEST,
+];
 
 function getTestById(id) {
   return TESTS.find((t) => t.id === id) || null;
@@ -1043,29 +1635,26 @@ export default function App() {
           {screen === 'intro' && (
             <div className="pt-2">
               <p className="text-xs font-bold mb-3 px-1 text-left" style={{ color: C.inkDim }}>실시할 검사를 선택하세요</p>
-              {TESTS.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => !t.comingSoon && startTest(t.id)}
-                  disabled={!!t.comingSoon}
-                  className="w-full mb-2.5 p-4 rounded-2xl border shadow-sm text-left flex items-center justify-between gap-3 disabled:opacity-50"
-                  style={{ background: C.card, borderColor: C.line }}
-                >
-                  <div>
-                    <p className="text-sm font-bold" style={{ color: C.ink }}>{t.name}</p>
-                    {!t.comingSoon && (
-                      <p className="text-[11px] font-mono font-bold mt-1" style={{ color: C.accent }}>{t.items.length}문항</p>
+              <div className="grid grid-cols-2 gap-2.5">
+                {TESTS.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => !t.comingSoon && startTest(t.id)}
+                    disabled={!!t.comingSoon}
+                    className="p-4 rounded-2xl border shadow-sm text-center flex flex-col items-center justify-center gap-1.5 disabled:opacity-50 min-h-[96px]"
+                    style={{ background: C.card, borderColor: C.line }}
+                  >
+                    <p className="text-sm font-bold leading-snug" style={{ color: C.ink }}>{t.name}</p>
+                    {t.comingSoon ? (
+                      <span className="text-[10px] font-bold px-2 py-1 rounded-full whitespace-nowrap" style={{ background: C.paperDim, color: C.inkDim }}>
+                        <Clock size={10} style={{ display: 'inline', marginRight: 2, verticalAlign: '-1px' }} />준비중
+                      </span>
+                    ) : (
+                      <p className="text-[11px] font-mono font-bold" style={{ color: C.accent }}>{t.items.length}문항</p>
                     )}
-                  </div>
-                  {t.comingSoon ? (
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-full whitespace-nowrap" style={{ background: C.paperDim, color: C.inkDim }}>
-                      <Clock size={10} style={{ display: 'inline', marginRight: 2, verticalAlign: '-1px' }} />준비중
-                    </span>
-                  ) : (
-                    <ChevronRight size={18} style={{ color: C.inkDim, flexShrink: 0 }} />
-                  )}
-                </button>
-              ))}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 

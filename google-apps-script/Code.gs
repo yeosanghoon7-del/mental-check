@@ -25,15 +25,24 @@ function safeSheetName_(name) {
   return cleaned.slice(0, 90) || 'unknown';
 }
 
-// 검사(testId)별로 시트 탭을 찾거나, 없으면 이 제출 건의 척도 이름들로 헤더를 만들어 새로 생성한다.
-function getOrCreateTestSheet_(testId, testName, scoreDefs) {
+// responses 객체({"1":2,"2":3,...})의 문항번호를 숫자 오름차순으로 정렬해 반환한다.
+function sortedItemNumbers_(responses) {
+  return Object.keys(responses || {})
+    .map(Number)
+    .filter((n) => !isNaN(n))
+    .sort((a, b) => a - b);
+}
+
+// 검사(testId)별로 시트 탭을 찾거나, 없으면 이 제출 건의 척도 이름·문항번호로 헤더를 만들어 새로 생성한다.
+function getOrCreateTestSheet_(testId, testName, scoreDefs, itemNumbers) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetName = safeSheetName_(testName || testId);
   let sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);
     const scoreHeaders = (scoreDefs || []).map((s) => s.name || s.key);
-    sheet.appendRow(FIXED_HEADERS.concat(scoreHeaders, TRAILING_HEADERS));
+    const itemHeaders = (itemNumbers || []).map((n) => `문항${n}`);
+    sheet.appendRow(FIXED_HEADERS.concat(scoreHeaders, itemHeaders, TRAILING_HEADERS));
   }
   return sheet;
 }
@@ -64,12 +73,15 @@ function handleSubmit_(body) {
   const entry = body.entry || {};
   const athlete = entry.athlete || {};
   const scores = entry.scores || [];
+  const responses = entry.responses || {};
+  const itemNumbers = sortedItemNumbers_(responses);
 
-  const sheet = getOrCreateTestSheet_(entry.testId, entry.testName, scores);
+  const sheet = getOrCreateTestSheet_(entry.testId, entry.testName, scores, itemNumbers);
   sheet.appendRow(
     [entry.id, entry.timestamp, entry.testId, entry.testName, athlete.name, athlete.phone4, athlete.org, athlete.sport]
       .concat(scores.map((s) => s.raw))
-      .concat([JSON.stringify(scores), JSON.stringify(entry.responses || {})])
+      .concat(itemNumbers.map((n) => responses[n]))
+      .concat([JSON.stringify(scores), JSON.stringify(responses)])
   );
   // 응답을 돌려주기 전에 시트 쓰기를 확정한다.
   // (없으면 "저장 완료" 응답 이후 바로 조회했을 때 아직 안 써진 것처럼 보이는 경우가 있었음)
