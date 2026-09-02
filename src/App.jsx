@@ -16,6 +16,10 @@ const C = {
   accent: 'var(--accent)',
   accent2: 'var(--accent2)',
   line: 'var(--line)',
+  // "검은 배경 + 흰 글씨" 버튼(선택된 리커트, 제출 버튼 등) 전용 색.
+  // C.ink는 다크모드에서 거의 흰색으로 뒤집히기 때문에, 배경으로 쓰면 흰 배경에 흰 글씨가 되어버려
+  // 테마와 무관하게 항상 어두운 값으로 고정된 별도 토큰을 둔다.
+  solid: '#16181B',
 };
 
 /* ============ Google Sheets 연동 설정 ============ */
@@ -1178,11 +1182,11 @@ function LikertItem({ no, text, options, value, onChange, idPrefix }) {
               onClick={() => onChange(no, opt.v)}
               className="py-3 px-1 rounded-xl text-center transition-all duration-150 border flex flex-col items-center justify-center shadow-sm active:scale-90"
               style={{
-                background: isSelected ? C.ink : C.card,
-                borderColor: isSelected ? C.ink : C.line,
+                background: isSelected ? C.solid : C.card,
+                borderColor: isSelected ? C.solid : C.line,
                 color: isSelected ? '#FFF' : C.inkDim,
                 transform: isSelected ? 'scale(1.05)' : 'scale(1)',
-                boxShadow: isSelected ? `0 6px 16px -4px color-mix(in srgb, ${C.ink} 40%, transparent)` : undefined,
+                boxShadow: isSelected ? '0 6px 16px -4px rgba(0, 0, 0, 0.4)' : undefined,
               }}
             >
               <span className="font-mono text-base font-black leading-none mb-1.5">{opt.v}</span>
@@ -1613,29 +1617,47 @@ export default function App() {
     <div className="min-h-screen w-full flex justify-center items-start font-sans antialiased" style={{ background: C.paper, color: C.ink }}>
       <div className="w-full max-w-lg mx-auto relative min-h-screen flex flex-col px-4 text-center">
 
-        <div className="sticky top-0 z-10 py-3 border-b backdrop-blur-md mb-2 flex items-center justify-between" style={{ background: C.paperGlass, borderColor: C.line }}>
-          <div className="w-16 flex items-center justify-start">
-            <img src="/계명대.jpg" alt="계명대학교" className="h-10 w-10 object-contain" />
-          </div>
-          <div className="text-center flex-1">
-            <p className="text-[10px] font-mono font-bold tracking-widest uppercase" style={{ color: C.accent }}>KSPCI</p>
-            <h1 className="text-lg font-black tracking-tight" style={{ color: C.ink }}>스포츠심리검사</h1>
-          </div>
-          <div className="w-16 flex flex-col items-end gap-1.5">
-            <button
-              onClick={toggleTheme}
-              aria-label="테마 전환"
-              className="w-7 h-7 rounded-full border shadow-sm flex items-center justify-center transition-transform active:scale-90"
-              style={{ background: C.card, borderColor: C.line }}
-            >
-              {isDark ? <Sun size={14} style={{ color: C.accent }} /> : <Moon size={14} style={{ color: C.inkDim }} />}
-            </button>
-            {!['resultsHome', 'lookup', 'admin'].includes(screen) && (
-              <button onClick={goResultsHome} className="text-xs font-bold px-2.5 py-1.5 rounded-lg border shadow-sm whitespace-nowrap transition-transform active:scale-95" style={{ borderColor: C.line, color: C.inkDim, background: C.card }}>
-                결과 조회
+        <div className="sticky top-0 z-10 pt-3 pb-2 border-b backdrop-blur-md mb-2" style={{ background: C.paperGlass, borderColor: C.line }}>
+          <div className="flex items-center justify-between">
+            <div className="w-16 flex items-center justify-start">
+              <img src="/kspci-logo.png" alt="계명대학교" className="h-10 w-12 object-contain" />
+            </div>
+            <div className="text-center flex-1">
+              <p className="text-[10px] font-mono font-bold tracking-widest uppercase" style={{ color: C.accent }}>KSPCI</p>
+              <h1 className="text-lg font-black tracking-tight" style={{ color: C.ink }}>스포츠심리검사</h1>
+            </div>
+            <div className="w-16 flex flex-col items-end gap-1.5">
+              <button
+                onClick={toggleTheme}
+                aria-label="테마 전환"
+                className="w-7 h-7 rounded-full border shadow-sm flex items-center justify-center transition-transform active:scale-90"
+                style={{ background: C.card, borderColor: C.line }}
+              >
+                {isDark ? <Sun size={14} style={{ color: C.accent }} /> : <Moon size={14} style={{ color: C.inkDim }} />}
               </button>
-            )}
+              {!['resultsHome', 'lookup', 'admin'].includes(screen) && (
+                <button onClick={goResultsHome} className="text-xs font-bold px-2.5 py-1.5 rounded-lg border shadow-sm whitespace-nowrap transition-transform active:scale-95" style={{ borderColor: C.line, color: C.inkDim, background: C.card }}>
+                  결과 조회
+                </button>
+              )}
+            </div>
           </div>
+          {screen === 'quiz' && currentTest && (() => {
+            const answered = currentTest.items.filter((it) => responses[it.no] !== undefined).length;
+            const total = currentTest.items.length;
+            const pct = total > 0 ? (answered / total) * 100 : 0;
+            return (
+              <div className="px-1 pt-2.5">
+                <div className="flex items-center justify-between mb-1.5 text-[11px] font-mono font-bold" style={{ color: C.inkDim }}>
+                  <span>{currentTest.name} 진행률</span>
+                  <span style={{ color: C.accent }}>{answered} / {total}</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: C.paperDim }}>
+                  <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: C.accent }} />
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {showInstallButton && screen === 'intro' && (
@@ -1680,7 +1702,7 @@ export default function App() {
                 <button
                   onClick={() => { setConfirmGoIntro(false); setScreen('intro'); }}
                   className="flex-1 py-2.5 rounded-xl text-xs font-bold"
-                  style={{ background: C.ink, color: '#FFF' }}
+                  style={{ background: C.solid, color: '#FFF' }}
                 >
                   확인
                 </button>
@@ -1725,23 +1747,6 @@ export default function App() {
               >
                 <ChevronLeft size={14} /> 처음 화면으로
               </button>
-              <p className="text-xs font-bold mb-2 font-mono text-center" style={{ color: C.accent }}>{currentTest.name}</p>
-              {(() => {
-                const answered = currentTest.items.filter((it) => responses[it.no] !== undefined).length;
-                const total = currentTest.items.length;
-                const pct = total > 0 ? (answered / total) * 100 : 0;
-                return (
-                  <div className="sticky z-10 mb-3 px-1 py-2 rounded-xl backdrop-blur-md" style={{ top: 68, background: C.paperGlass }}>
-                    <div className="flex items-center justify-between mb-1.5 text-[11px] font-mono font-bold" style={{ color: C.inkDim }}>
-                      <span>진행률</span>
-                      <span style={{ color: C.accent }}>{answered} / {total}</span>
-                    </div>
-                    <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: C.paperDim }}>
-                      <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: C.accent }} />
-                    </div>
-                  </div>
-                );
-              })()}
               {currentTest.items.map((it) => (
                 <LikertItem key={it.no} no={it.no} text={it.text} options={currentTest.likert} value={responses[it.no]} onChange={(no, v) => setResponses((r) => ({ ...r, [no]: v }))} idPrefix="quiz" />
               ))}
@@ -1837,7 +1842,7 @@ export default function App() {
                 <div className="p-5 rounded-2xl border shadow-sm mb-4" style={{ background: C.card, borderColor: C.line }}>
                   <Field label="이름" value={lookupName} onChange={setLookupName} placeholder="검사 때 입력한 이름" />
                   <Field label="휴대폰 번호 뒷자리 4자리" type="tel" value={lookupPhone4} onChange={(v) => setLookupPhone4(sanitizePhone4(v))} placeholder="예: 1234" />
-                  <button onClick={doLookup} disabled={lookupLoading} className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-50" style={{ background: C.ink, color: '#FFF' }}>
+                  <button onClick={doLookup} disabled={lookupLoading} className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-50" style={{ background: C.solid, color: '#FFF' }}>
                     <Search size={16} /> {lookupLoading ? '조회 중...' : '조회하기'}
                   </button>
                   {lookupError && <p className="text-xs font-bold mt-3" style={{ color: C.accent }}>{lookupError}</p>}
@@ -1916,7 +1921,7 @@ export default function App() {
               {!adminRows && (
                 <div className="p-5 rounded-2xl border shadow-sm mb-4" style={{ background: C.card, borderColor: C.line }}>
                   <Field label="관리자 비밀번호" type="password" value={adminPassword} onChange={setAdminPassword} placeholder="비밀번호 입력" />
-                  <button onClick={doAdminLogin} disabled={adminLoading} className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-50" style={{ background: C.ink, color: '#FFF' }}>
+                  <button onClick={doAdminLogin} disabled={adminLoading} className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-50" style={{ background: C.solid, color: '#FFF' }}>
                     <Lock size={16} /> {adminLoading ? '확인 중...' : '로그인'}
                   </button>
                   {adminError && <p className="text-xs font-bold mt-3" style={{ color: C.accent }}>{adminError}</p>}
@@ -1929,7 +1934,7 @@ export default function App() {
                     <h2 className="text-base font-bold" style={{ color: C.ink }}>전체 검사 결과</h2>
                     <span className="text-xs font-mono font-bold px-2 py-0.5 rounded" style={{ background: C.paperDim, color: C.inkDim }}>{adminRows.length}건</span>
                   </div>
-                  <button onClick={exportAdminCSV} disabled={!adminRows.length} className="w-full mb-4 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 shadow-sm" style={{ background: C.ink, color: '#FFF' }}>
+                  <button onClick={exportAdminCSV} disabled={!adminRows.length} className="w-full mb-4 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 shadow-sm" style={{ background: C.solid, color: '#FFF' }}>
                     <Download size={15} /> CSV 다운로드
                   </button>
 
@@ -2000,7 +2005,7 @@ export default function App() {
               </div>
             )}
             {screen === 'quiz' && (
-              <button onClick={goToAthleteInfo} className="w-full py-4 rounded-xl font-bold flex items-center justify-center gap-1 text-base shadow-md" style={{ background: C.ink, color: '#FFF' }}>
+              <button onClick={goToAthleteInfo} className="w-full py-4 rounded-xl font-bold flex items-center justify-center gap-1 text-base shadow-md" style={{ background: C.solid, color: '#FFF' }}>
                 다음 <ChevronRight size={18} />
               </button>
             )}
