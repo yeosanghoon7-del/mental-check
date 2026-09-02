@@ -758,6 +758,37 @@ export default function App() {
     }
   }, [screen, athlete, selectedTestId, responses, savedEntry]);
 
+  // ===== 모바일 하드웨어/제스처 "뒤로가기"가 앱을 바로 종료시키지 않고 이전 화면으로 돌아가게 처리 =====
+  const isPoppingRef = useRef(false);
+  const historyReadyRef = useRef(false);
+
+  useEffect(() => {
+    const state = { screen, selectedTestId, lookupDetailIdx, adminDetailIdx };
+    if (!historyReadyRef.current) {
+      historyReadyRef.current = true;
+      window.history.replaceState(state, '');
+      return;
+    }
+    if (isPoppingRef.current) {
+      isPoppingRef.current = false;
+      return;
+    }
+    window.history.pushState(state, '');
+  }, [screen, selectedTestId, lookupDetailIdx, adminDetailIdx]);
+
+  useEffect(() => {
+    const onPopState = (e) => {
+      isPoppingRef.current = true;
+      const s = e.state || {};
+      setScreen(s.screen || 'intro');
+      setSelectedTestId(s.selectedTestId ?? null);
+      setLookupDetailIdx(s.lookupDetailIdx ?? null);
+      setAdminDetailIdx(s.adminDetailIdx ?? null);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
   useEffect(() => {
     const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     setIsStandalone(standalone);
