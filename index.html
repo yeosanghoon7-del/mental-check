@@ -15,11 +15,116 @@
     <meta property="og:image" content="https://mental-check-blue.vercel.app/kspci-share.png" />
     <meta name="twitter:card" content="summary_large_image" />
 
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="manifest" href="/manifest.json" /> <meta name="theme-color" content="#E63946" /> <link rel="apple-touch-icon" href="/icons/icon-192.png" /> <meta name="apple-mobile-web-app-capable" content="yes" />
+
+    <style>
+      :root {
+        --paper: #F8F9FA;
+        --paper-glass: rgba(248, 249, 250, 0.9);
+        --paperDim: #E9ECEF;
+        --card: #FFFFFF;
+        --ink: #121417;
+        --inkDim: #4A5056;
+        --accent: #E63946;
+        --accent2: #2A9D8F;
+        --line: #DEE2E6;
+        --blob1: #E63946;
+        --blob2: #2A9D8F;
+        /* color-mix()는 html2canvas(결과 이미지 저장)가 못 읽어서, 미리 계산된 rgba로 대신 정의 */
+        --accent-tint: rgba(230, 57, 70, 0.15);
+        --accent2-tint: rgba(42, 157, 143, 0.15);
+        --inkDim-tint: rgba(74, 80, 86, 0.15);
+        --accent-soft-bg: rgba(230, 57, 70, 0.1);
+        --accent-soft-border: rgba(230, 57, 70, 0.3);
+      }
+      html.dark {
+        --paper: #121417;
+        --paper-glass: rgba(18, 20, 23, 0.88);
+        --paperDim: #1D2024;
+        --card: #1A1D21;
+        --ink: #F3F4F5;
+        --inkDim: #A7ADB3;
+        --accent: #FF6B75;
+        --accent2: #4FCDBA;
+        --line: #2B2F34;
+        --blob1: #7A1F27;
+        --blob2: #16483F;
+        --accent-tint: rgba(255, 107, 117, 0.18);
+        --accent2-tint: rgba(79, 205, 186, 0.18);
+        --inkDim-tint: rgba(167, 173, 179, 0.18);
+        --accent-soft-bg: rgba(255, 107, 117, 0.14);
+        --accent-soft-border: rgba(255, 107, 117, 0.35);
+      }
+      html, body, #root { height: 100%; }
+      body {
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif !important;
+        background: var(--paper);
+        transition: background-color 0.2s ease;
+      }
+      /* 배경에 은은하게 깔리는 그라데이션 블롭 — 완전 납작한 단색 배경 대신 살짝 입체감을 준다 */
+      #bg-decor {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      #bg-decor::before, #bg-decor::after {
+        content: '';
+        position: absolute;
+        width: 60vmax;
+        height: 60vmax;
+        border-radius: 9999px;
+        filter: blur(90px);
+        opacity: 0.16;
+      }
+      #bg-decor::before {
+        top: -20vmax;
+        left: -20vmax;
+        background: var(--blob1);
+      }
+      #bg-decor::after {
+        bottom: -25vmax;
+        right: -20vmax;
+        background: var(--blob2);
+      }
+      html.dark #bg-decor::before, html.dark #bg-decor::after {
+        opacity: 0.22;
+      }
+      /* Tailwind 기본 shadow-sm보다 더 부드럽고 뜬 느낌의 그림자로 교체 */
+      .shadow-sm {
+        box-shadow: 0 2px 10px -2px rgba(18, 20, 23, 0.07), 0 1px 3px -1px rgba(18, 20, 23, 0.04) !important;
+      }
+      html.dark .shadow-sm {
+        box-shadow: 0 2px 14px -2px rgba(0, 0, 0, 0.45), 0 1px 3px -1px rgba(0, 0, 0, 0.3) !important;
+      }
+      .shadow-lg {
+        box-shadow: 0 12px 32px -8px rgba(18, 20, 23, 0.14), 0 4px 10px -4px rgba(18, 20, 23, 0.08) !important;
+      }
+      html.dark .shadow-lg {
+        box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.55), 0 4px 10px -4px rgba(0, 0, 0, 0.35) !important;
+      }
+      /* 배경·글자·테두리 색이 부드럽게 전환되도록 (다크모드 토글 시 뚝뚝 끊기지 않게) */
+      button, div, p, h1, h2, h3, span, input, table, td, th {
+        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+      }
+    </style>
   </head>
-  <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js'));}</script>
+  <script>
+    // 저장된 테마(또는 시스템 설정)를 페이지 그리기 전에 먼저 적용해 깜빡임을 막는다.
+    (function () {
+      try {
+        var saved = localStorage.getItem('mc_theme');
+        var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (dark) document.documentElement.classList.add('dark');
+      } catch (e) {}
+    })();
+    if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js'));}
+  </script>
   <body>
+    <div id="bg-decor"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

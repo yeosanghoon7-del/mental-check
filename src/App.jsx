@@ -1,18 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
-import { ChevronRight, ChevronLeft, Check, Download, AlertCircle, RotateCcw, Smartphone, X, Lock, Search, User, Clock, Image } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, Download, AlertCircle, RotateCcw, Smartphone, X, Lock, Search, User, Clock, Image, Sun, Moon } from 'lucide-react';
 
 /* ============ Design tokens ============ */
+// index.html의 :root / html.dark 에 정의된 CSS 변수를 그대로 참조한다.
+// 이렇게 하면 다크모드 토글이 클래스 하나만 바꿔도 여기 있는 모든 색이 자동으로 따라간다.
 const C = {
-  paper: '#F8F9FA',
-  paperDim: '#E9ECEF',
-  card: '#FFFFFF',
-  ink: '#121417',
-  inkDim: '#4A5056',
-  accent: '#E63946',
-  accent2: '#2A9D8F',
-  line: '#DEE2E6',
+  paper: 'var(--paper)',
+  paperGlass: 'var(--paper-glass)',
+  paperDim: 'var(--paperDim)',
+  card: 'var(--card)',
+  ink: 'var(--ink)',
+  inkDim: 'var(--inkDim)',
+  accent: 'var(--accent)',
+  accent2: 'var(--accent2)',
+  line: 'var(--line)',
 };
 
 /* ============ Google Sheets 연동 설정 ============ */
@@ -1173,11 +1176,13 @@ function LikertItem({ no, text, options, value, onChange, idPrefix }) {
               key={opt.v}
               type="button"
               onClick={() => onChange(no, opt.v)}
-              className="py-3 px-1 rounded-xl text-center transition-all border flex flex-col items-center justify-center shadow-sm active:scale-95"
+              className="py-3 px-1 rounded-xl text-center transition-all duration-150 border flex flex-col items-center justify-center shadow-sm active:scale-90"
               style={{
                 background: isSelected ? C.ink : C.card,
                 borderColor: isSelected ? C.ink : C.line,
                 color: isSelected ? '#FFF' : C.inkDim,
+                transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+                boxShadow: isSelected ? `0 6px 16px -4px color-mix(in srgb, ${C.ink} 40%, transparent)` : undefined,
               }}
             >
               <span className="font-mono text-base font-black leading-none mb-1.5">{opt.v}</span>
@@ -1207,23 +1212,54 @@ function ScoreRadar({ data }) {
   );
 }
 
+// 하위척도 점수를 원형 게이지로 보여준다 (막대바보다 한눈에 들어오는 "리포트"형 시각화)
+function ScoreGauge({ norm, color, size = 66 }) {
+  const stroke = 7;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const pct = Math.min(100, Math.max(0, norm));
+  const offset = c - (pct / 100) * c;
+  return (
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={C.paperDim} strokeWidth={stroke} />
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+          strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round"
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="font-mono font-black" style={{ fontSize: size * 0.26, color: C.ink }}>{Math.round(pct)}</span>
+      </div>
+    </div>
+  );
+}
+
 function ScoreRow({ name, raw, max, norm, def, high, low, tip, positive }) {
   const level = norm >= 60 ? 'high' : norm <= 40 ? 'low' : 'mid';
   const levelText = level === 'high' ? high : level === 'low' ? low : '두드러지지 않은 보통 수준의 반응을 보여요.';
-  const levelColor = level === 'mid' ? C.inkDim : (level === 'high') === positive ? C.accent2 : C.accent;
+  const isMid = level === 'mid';
+  const isGood = !isMid && (level === 'high') === positive;
+  const levelColor = isMid ? C.inkDim : isGood ? C.accent2 : C.accent;
+  const levelTint = isMid ? 'var(--inkDim-tint)' : isGood ? 'var(--accent2-tint)' : 'var(--accent-tint)';
   return (
     <div className="py-4 border-b last:border-b-0 text-center">
-      <h3 className="text-base font-black mb-1" style={{ color: C.ink }}>{name}</h3>
-      <div className="mb-1">
-        <span className="font-mono text-xl font-black" style={{ color: C.ink }}>{norm.toFixed(1)}</span>
-        <span className="text-xs font-mono font-semibold" style={{ color: C.inkDim }}> / 100점</span>
-        <span className="ml-1.5 text-[10px] font-bold" style={{ color: C.inkDim }}>({positive ? '높을수록 좋음' : '낮을수록 좋음'})</span>
+      <div className="flex items-center gap-3 justify-center mb-2">
+        <ScoreGauge norm={norm} color={levelColor} />
+        <div className="text-left">
+          <h3 className="text-base font-black" style={{ color: C.ink }}>{name}</h3>
+          <span
+            className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
+            style={{ background: levelTint, color: levelColor }}
+          >
+            {positive ? '높을수록 좋음' : '낮을수록 좋음'}
+          </span>
+        </div>
       </div>
       {def && <p className="text-xs font-medium leading-relaxed mb-2 px-2" style={{ color: C.inkDim }}>{def}</p>}
-      <div className="w-full h-2 rounded-full overflow-hidden mb-2 max-w-xs mx-auto" style={{ background: C.paperDim }}>
-        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.max(0, norm))}%`, background: C.accent }} />
-      </div>
-      <p className="text-xs font-mono font-bold mb-2" style={{ color: C.inkDim }}>원점수 {raw} / {max}점</p>
+      <p className="text-xs font-mono font-bold mb-2" style={{ color: C.inkDim }}>원점수 {raw} / {max}점 · 환산 {norm.toFixed(1)}점</p>
       {levelText && (
         <p className="text-xs font-bold leading-relaxed mb-2 px-2" style={{ color: levelColor }}>{levelText}</p>
       )}
@@ -1337,6 +1373,16 @@ export default function App() {
   const [isIOS, setIsIOS] = useState(false);                // iOS는 beforeinstallprompt를 지원 안 함
   const [showIOSGuide, setShowIOSGuide] = useState(false);  // iOS용 수동 안내 팝업
   const [confirmGoIntro, setConfirmGoIntro] = useState(false); // 처음화면 이동 확인 팝업 (window.confirm 대신 자체 구현)
+
+  // ===== 다크모드 (초기값은 index.html의 인라인 스크립트가 이미 <html class="dark">로 세팅해둔 상태를 그대로 읽는다) =====
+  const [isDark, setIsDark] = useState(() => typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
+
+  function toggleTheme() {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.toggle('dark', next);
+    try { localStorage.setItem('mc_theme', next ? 'dark' : 'light'); } catch {}
+  }
 
   const currentTest = getTestById(selectedTestId);
 
@@ -1542,7 +1588,9 @@ export default function App() {
     if (!ref.current || savingImage) return;
     setSavingImage(true);
     try {
-      const canvas = await html2canvas(ref.current, { backgroundColor: C.paper, scale: 2 });
+      // html2canvas는 var(--x) 같은 CSS 변수 참조를 옵션값으로는 못 읽어서, 실제 계산된 색으로 먼저 풀어준다.
+      const resolvedPaper = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim() || '#F8F9FA';
+      const canvas = await html2canvas(ref.current, { backgroundColor: resolvedPaper, scale: 2, useCORS: true });
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
       a.href = url;
@@ -1565,7 +1613,7 @@ export default function App() {
     <div className="min-h-screen w-full flex justify-center items-start font-sans antialiased" style={{ background: C.paper, color: C.ink }}>
       <div className="w-full max-w-lg mx-auto relative min-h-screen flex flex-col px-4 text-center">
 
-        <div className="sticky top-0 z-10 py-3 border-b backdrop-blur-md mb-2 flex items-center justify-between" style={{ background: `${C.paper}F2`, borderColor: C.line }}>
+        <div className="sticky top-0 z-10 py-3 border-b backdrop-blur-md mb-2 flex items-center justify-between" style={{ background: C.paperGlass, borderColor: C.line }}>
           <div className="w-16 flex items-center justify-start">
             <img src="/계명대.jpg" alt="계명대학교" className="h-10 w-10 object-contain" />
           </div>
@@ -1573,9 +1621,17 @@ export default function App() {
             <p className="text-[10px] font-mono font-bold tracking-widest uppercase" style={{ color: C.accent }}>KSPCI</p>
             <h1 className="text-lg font-black tracking-tight" style={{ color: C.ink }}>스포츠심리검사</h1>
           </div>
-          <div className="w-16 text-right">
+          <div className="w-16 flex flex-col items-end gap-1.5">
+            <button
+              onClick={toggleTheme}
+              aria-label="테마 전환"
+              className="w-7 h-7 rounded-full border shadow-sm flex items-center justify-center transition-transform active:scale-90"
+              style={{ background: C.card, borderColor: C.line }}
+            >
+              {isDark ? <Sun size={14} style={{ color: C.accent }} /> : <Moon size={14} style={{ color: C.inkDim }} />}
+            </button>
             {!['resultsHome', 'lookup', 'admin'].includes(screen) && (
-              <button onClick={goResultsHome} className="text-xs font-bold px-2.5 py-1.5 rounded-lg border bg-white shadow-sm whitespace-nowrap" style={{ borderColor: C.line, color: C.inkDim }}>
+              <button onClick={goResultsHome} className="text-xs font-bold px-2.5 py-1.5 rounded-lg border shadow-sm whitespace-nowrap transition-transform active:scale-95" style={{ borderColor: C.line, color: C.inkDim, background: C.card }}>
                 결과 조회
               </button>
             )}
@@ -1594,7 +1650,7 @@ export default function App() {
 
         {showIOSGuide && (
           <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowIOSGuide(false)}>
-            <div className="w-full max-w-lg bg-white rounded-t-2xl p-5 pb-8" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full max-w-lg rounded-t-2xl p-5 pb-8" style={{ background: C.card }} onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-bold" style={{ color: C.ink }}>iPhone에서 앱으로 설치하기</h3>
                 <button onClick={() => setShowIOSGuide(false)}><X size={18} style={{ color: C.inkDim }} /></button>
@@ -1610,7 +1666,7 @@ export default function App() {
 
         {confirmGoIntro && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setConfirmGoIntro(false)}>
-            <div className="w-full max-w-xs bg-white rounded-2xl p-5 text-center shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full max-w-xs rounded-2xl p-5 text-center shadow-lg" style={{ background: C.card }} onClick={(e) => e.stopPropagation()}>
               <p className="text-sm font-bold mb-1" style={{ color: C.ink }}>처음 화면으로 돌아갈까요?</p>
               <p className="text-xs leading-relaxed mb-4" style={{ color: C.inkDim }}>지금까지 답변은 그대로 저장돼요.</p>
               <div className="flex gap-2">
@@ -1664,12 +1720,28 @@ export default function App() {
             <div>
               <button
                 onClick={() => setConfirmGoIntro(true)}
-                className="w-full mb-3 py-2.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold border"
+                className="w-full mb-3 py-2.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold border transition-transform active:scale-95"
                 style={{ borderColor: C.line, background: C.card, color: C.inkDim }}
               >
                 <ChevronLeft size={14} /> 처음 화면으로
               </button>
-              <p className="text-xs font-bold mb-3 font-mono text-center" style={{ color: C.accent }}>{currentTest.name} ({currentTest.items.length}문항)</p>
+              <p className="text-xs font-bold mb-2 font-mono text-center" style={{ color: C.accent }}>{currentTest.name}</p>
+              {(() => {
+                const answered = currentTest.items.filter((it) => responses[it.no] !== undefined).length;
+                const total = currentTest.items.length;
+                const pct = total > 0 ? (answered / total) * 100 : 0;
+                return (
+                  <div className="sticky z-10 mb-3 px-1 py-2 rounded-xl backdrop-blur-md" style={{ top: 68, background: C.paperGlass }}>
+                    <div className="flex items-center justify-between mb-1.5 text-[11px] font-mono font-bold" style={{ color: C.inkDim }}>
+                      <span>진행률</span>
+                      <span style={{ color: C.accent }}>{answered} / {total}</span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: C.paperDim }}>
+                      <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: C.accent }} />
+                    </div>
+                  </div>
+                );
+              })()}
               {currentTest.items.map((it) => (
                 <LikertItem key={it.no} no={it.no} text={it.text} options={currentTest.likert} value={responses[it.no]} onChange={(no, v) => setResponses((r) => ({ ...r, [no]: v }))} idPrefix="quiz" />
               ))}
@@ -1702,7 +1774,7 @@ export default function App() {
               <div ref={resultsCaptureRef} style={{ background: C.paper }}>
                 <div className="p-4 rounded-xl border mb-4 text-center" style={{ background: C.card, borderColor: C.line }}>
                   <h2 className="text-base font-bold" style={{ color: C.ink }}>{savedEntry.athlete.name} 선수 결과</h2>
-                  <p className="text-xs text-gray-500">{savedEntry.athlete.org} · {savedEntry.athlete.sport}</p>
+                  <p className="text-xs" style={{ color: C.inkDim }}>{savedEntry.athlete.org} · {savedEntry.athlete.sport}</p>
                 </div>
 
                 <ResultsBlock title={currentTest.name} merged={resultsMerged} />
@@ -1711,11 +1783,12 @@ export default function App() {
               <button
                 onClick={() => saveAsImage(resultsCaptureRef, `${savedEntry.athlete.name}_${currentTest.name}_결과.png`)}
                 disabled={savingImage}
-                className="w-full py-3.5 mt-6 rounded-xl border font-bold text-sm bg-white shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3.5 mt-6 rounded-xl border font-bold text-sm shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-transform active:scale-95"
+                style={{ background: C.card, borderColor: C.line, color: C.ink }}
               >
                 <Image size={16} /> {savingImage ? '저장 중...' : '결과 이미지로 저장'}
               </button>
-              <button onClick={startNewTest} className="w-full py-3.5 mt-2 rounded-xl border font-bold text-sm bg-white shadow-sm flex items-center justify-center gap-2">
+              <button onClick={startNewTest} className="w-full py-3.5 mt-2 rounded-xl border font-bold text-sm shadow-sm flex items-center justify-center gap-2 transition-transform active:scale-95" style={{ background: C.card, borderColor: C.line, color: C.ink }}>
                 <RotateCcw size={16} /> 새 검사 시작하기
               </button>
             </div>
@@ -1811,7 +1884,7 @@ export default function App() {
                   <div ref={lookupCaptureRef} style={{ background: C.paper }}>
                     <div className="p-4 rounded-xl border mb-4 text-center" style={{ background: C.card, borderColor: C.line }}>
                       <h2 className="text-base font-bold" style={{ color: C.ink }}>{lookupName} 선수 결과</h2>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs" style={{ color: C.inkDim }}>
                         {new Date(lookupRows[lookupDetailIdx].timestamp).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                         {' · '}{lookupRows[lookupDetailIdx].org} · {lookupRows[lookupDetailIdx].sport}
                       </p>
@@ -1824,7 +1897,8 @@ export default function App() {
                   <button
                     onClick={() => saveAsImage(lookupCaptureRef, `${lookupName}_${lookupRows[lookupDetailIdx].testName}_결과.png`)}
                     disabled={savingImage}
-                    className="w-full py-3.5 mt-4 rounded-xl border font-bold text-sm bg-white shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-3.5 mt-4 rounded-xl border font-bold text-sm shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                    style={{ background: C.card, borderColor: C.line, color: C.ink }}
                   >
                     <Image size={16} /> {savingImage ? '저장 중...' : '결과 이미지로 저장'}
                   </button>
@@ -1897,7 +1971,7 @@ export default function App() {
                   <div ref={adminCaptureRef} style={{ background: C.paper }}>
                     <div className="p-4 rounded-xl border mb-4 text-center" style={{ background: C.card, borderColor: C.line }}>
                       <h2 className="text-base font-bold" style={{ color: C.ink }}>{adminRows[adminDetailIdx].name} 선수 결과</h2>
-                      <p className="text-xs text-gray-500">{adminRows[adminDetailIdx].org} · {adminRows[adminDetailIdx].sport}</p>
+                      <p className="text-xs" style={{ color: C.inkDim }}>{adminRows[adminDetailIdx].org} · {adminRows[adminDetailIdx].sport}</p>
                     </div>
                     <ResultsBlock
                       title={adminRows[adminDetailIdx].testName}
@@ -1907,7 +1981,8 @@ export default function App() {
                   <button
                     onClick={() => saveAsImage(adminCaptureRef, `${adminRows[adminDetailIdx].name}_${adminRows[adminDetailIdx].testName}_결과.png`)}
                     disabled={savingImage}
-                    className="w-full py-3.5 mt-4 rounded-xl border font-bold text-sm bg-white shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-3.5 mt-4 rounded-xl border font-bold text-sm shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                    style={{ background: C.card, borderColor: C.line, color: C.ink }}
                   >
                     <Image size={16} /> {savingImage ? '저장 중...' : '결과 이미지로 저장'}
                   </button>
@@ -1920,7 +1995,7 @@ export default function App() {
         <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center pointer-events-none">
           <div className="w-full max-w-lg px-4 pb-6 pt-3 pointer-events-auto" style={{ background: `linear-gradient(to top, ${C.paper} 90%, transparent)` }}>
             {errorMsg && (
-              <div className="flex items-center justify-center gap-1.5 mb-2 text-xs font-bold p-2 rounded-lg border" style={{ color: C.accent, background: `${C.accent}10`, borderColor: `${C.accent}30` }}>
+              <div className="flex items-center justify-center gap-1.5 mb-2 text-xs font-bold p-2 rounded-lg border" style={{ color: C.accent, background: 'var(--accent-soft-bg)', borderColor: 'var(--accent-soft-border)' }}>
                 <AlertCircle size={14} /><span>{errorMsg}</span>
               </div>
             )}
