@@ -945,7 +945,7 @@ export default function App() {
             <img src="/계명대.jpg" alt="계명대학교" className="h-10 w-10 object-contain" />
           </div>
           <div className="text-center flex-1">
-            <p className="text-[10px] font-mono font-bold tracking-widest uppercase" style={{ color: C.accent }}>Mental Skills Check</p>
+            <p className="text-[10px] font-mono font-bold tracking-widest uppercase" style={{ color: C.accent }}>KSPCI</p>
             <h1 className="text-lg font-black tracking-tight" style={{ color: C.ink }}>스포츠심리검사</h1>
           </div>
           <div className="w-16 text-right">
@@ -1022,7 +1022,6 @@ export default function App() {
                 >
                   <div>
                     <p className="text-sm font-bold" style={{ color: C.ink }}>{t.name}</p>
-                    <p className="text-xs mt-0.5" style={{ color: C.inkDim }}>{t.shortDesc}</p>
                     {!t.comingSoon && (
                       <p className="text-[11px] font-mono font-bold mt-1" style={{ color: C.accent }}>{t.items.length}문항</p>
                     )}
