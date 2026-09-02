@@ -1,25 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
-import { ChevronRight, ChevronLeft, Check, Download, AlertCircle, RotateCcw, Smartphone, X, Lock, Search, User, Clock, Image, Sun, Moon } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, Download, AlertCircle, RotateCcw, Smartphone, X, Lock, Search, User, Clock, Image } from 'lucide-react';
 
 /* ============ Design tokens ============ */
-// index.html의 :root / html.dark 에 정의된 CSS 변수를 그대로 참조한다.
-// 이렇게 하면 다크모드 토글이 클래스 하나만 바꿔도 여기 있는 모든 색이 자동으로 따라간다.
+// index.html의 :root 에 정의된 CSS 변수를 그대로 참조한다.
 const C = {
   paper: 'var(--paper)',
-  paperGlass: 'var(--paper-glass)',
   paperDim: 'var(--paperDim)',
   card: 'var(--card)',
   ink: 'var(--ink)',
   inkDim: 'var(--inkDim)',
   accent: 'var(--accent)',
   accent2: 'var(--accent2)',
+  warn: 'var(--warn)',
   line: 'var(--line)',
-  // "검은 배경 + 흰 글씨" 버튼(선택된 리커트, 제출 버튼 등) 전용 색.
-  // C.ink는 다크모드에서 거의 흰색으로 뒤집히기 때문에, 배경으로 쓰면 흰 배경에 흰 글씨가 되어버려
-  // 테마와 무관하게 항상 어두운 값으로 고정된 별도 토큰을 둔다.
-  solid: '#16181B',
 };
 
 /* ============ Google Sheets 연동 설정 ============ */
@@ -1165,12 +1160,12 @@ function Field({ label, value, onChange, placeholder, type = 'text' }) {
 function LikertItem({ no, text, options, value, onChange, idPrefix }) {
   const answered = value !== undefined && value !== null;
   return (
-    <div id={`${idPrefix}-item-${no}`} className="py-5 border-b text-center" style={{ borderColor: C.line }}>
-      <div className="mb-3 text-center">
+    <div id={`${idPrefix}-item-${no}`} className="py-5 border-b text-left" style={{ borderColor: C.line }}>
+      <div className="mb-3 text-left">
         <span className="font-mono text-xs font-black block mb-1" style={{ color: answered ? C.inkDim : C.accent }}>
           {String(no).padStart(2, '0')}
         </span>
-        <p className="text-base font-bold leading-relaxed" style={{ color: C.ink }}>{text}</p>
+        <p className="text-base font-bold leading-relaxed font-headline" style={{ color: C.ink }}>{text}</p>
       </div>
       <div className={`grid ${options.length === 5 ? 'grid-cols-5' : 'grid-cols-4'} gap-2 w-full max-w-md mx-auto`}>
         {options.map((opt) => {
@@ -1180,13 +1175,11 @@ function LikertItem({ no, text, options, value, onChange, idPrefix }) {
               key={opt.v}
               type="button"
               onClick={() => onChange(no, opt.v)}
-              className="py-3 px-1 rounded-xl text-center transition-all duration-150 border flex flex-col items-center justify-center shadow-sm active:scale-90"
+              className="py-3 px-1 text-center transition-all duration-150 border flex flex-col items-center justify-center active:scale-90"
               style={{
-                background: isSelected ? C.solid : C.card,
-                borderColor: isSelected ? C.solid : C.line,
+                background: isSelected ? C.ink : C.card,
+                borderColor: isSelected ? C.ink : C.line,
                 color: isSelected ? '#FFF' : C.inkDim,
-                transform: isSelected ? 'scale(1.05)' : 'scale(1)',
-                boxShadow: isSelected ? '0 6px 16px -4px rgba(0, 0, 0, 0.4)' : undefined,
               }}
             >
               <span className="font-mono text-base font-black leading-none mb-1.5">{opt.v}</span>
@@ -1246,8 +1239,8 @@ function ScoreRow({ name, raw, max, norm, def, high, low, tip, positive }) {
   const levelText = level === 'high' ? high : level === 'low' ? low : '두드러지지 않은 보통 수준의 반응을 보여요.';
   const isMid = level === 'mid';
   const isGood = !isMid && (level === 'high') === positive;
-  const levelColor = isMid ? C.inkDim : isGood ? C.accent2 : C.accent;
-  const levelTint = isMid ? 'var(--inkDim-tint)' : isGood ? 'var(--accent2-tint)' : 'var(--accent-tint)';
+  const levelColor = isMid ? C.inkDim : isGood ? C.accent2 : C.warn;
+  const levelTint = isMid ? 'var(--inkDim-tint)' : isGood ? 'var(--accent2-tint)' : 'var(--warn-tint)';
   return (
     <div className="py-4 border-b last:border-b-0 text-center">
       <div className="flex items-center gap-3 justify-center mb-2">
@@ -1377,16 +1370,6 @@ export default function App() {
   const [isIOS, setIsIOS] = useState(false);                // iOS는 beforeinstallprompt를 지원 안 함
   const [showIOSGuide, setShowIOSGuide] = useState(false);  // iOS용 수동 안내 팝업
   const [confirmGoIntro, setConfirmGoIntro] = useState(false); // 처음화면 이동 확인 팝업 (window.confirm 대신 자체 구현)
-
-  // ===== 다크모드 (초기값은 index.html의 인라인 스크립트가 이미 <html class="dark">로 세팅해둔 상태를 그대로 읽는다) =====
-  const [isDark, setIsDark] = useState(() => typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
-
-  function toggleTheme() {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.classList.toggle('dark', next);
-    try { localStorage.setItem('mc_theme', next ? 'dark' : 'light'); } catch {}
-  }
 
   const currentTest = getTestById(selectedTestId);
 
@@ -1617,26 +1600,18 @@ export default function App() {
     <div className="min-h-screen w-full flex justify-center items-start font-sans antialiased" style={{ background: C.paper, color: C.ink }}>
       <div className="w-full max-w-lg mx-auto relative min-h-screen flex flex-col px-4 text-center">
 
-        <div className="sticky top-0 z-10 pt-3 pb-2 border-b backdrop-blur-md mb-2" style={{ background: C.paperGlass, borderColor: C.line }}>
+        <div className="sticky top-0 z-10 pt-3 pb-2 border-b mb-2" style={{ background: C.paper, borderColor: C.line }}>
           <div className="flex items-center justify-between">
             <div className="w-16 flex items-center justify-start">
               <img src="/kspci-logo.png" alt="계명대학교" className="h-10 w-12 object-contain" />
             </div>
             <div className="text-center flex-1">
               <p className="text-[10px] font-mono font-bold tracking-widest uppercase" style={{ color: C.accent }}>KSPCI</p>
-              <h1 className="text-lg font-black tracking-tight" style={{ color: C.ink }}>스포츠심리검사</h1>
+              <h1 className="text-lg font-black tracking-tight font-headline" style={{ color: C.ink }}>스포츠심리검사</h1>
             </div>
             <div className="w-16 flex flex-col items-end gap-1.5">
-              <button
-                onClick={toggleTheme}
-                aria-label="테마 전환"
-                className="w-7 h-7 rounded-full border shadow-sm flex items-center justify-center transition-transform active:scale-90"
-                style={{ background: C.card, borderColor: C.line }}
-              >
-                {isDark ? <Sun size={14} style={{ color: C.accent }} /> : <Moon size={14} style={{ color: C.inkDim }} />}
-              </button>
               {!['resultsHome', 'lookup', 'admin'].includes(screen) && (
-                <button onClick={goResultsHome} className="text-xs font-bold px-2.5 py-1.5 rounded-lg border shadow-sm whitespace-nowrap transition-transform active:scale-95" style={{ borderColor: C.line, color: C.inkDim, background: C.card }}>
+                <button onClick={goResultsHome} className="text-xs font-bold px-2.5 py-1.5 border whitespace-nowrap transition-transform active:scale-95" style={{ borderColor: C.line, color: C.inkDim, background: C.card }}>
                   결과 조회
                 </button>
               )}
@@ -1702,7 +1677,7 @@ export default function App() {
                 <button
                   onClick={() => { setConfirmGoIntro(false); setScreen('intro'); }}
                   className="flex-1 py-2.5 rounded-xl text-xs font-bold"
-                  style={{ background: C.solid, color: '#FFF' }}
+                  style={{ background: C.ink, color: '#FFF' }}
                 >
                   확인
                 </button>
@@ -1764,7 +1739,7 @@ export default function App() {
               </button>
               <p className="text-xs font-bold mb-4 font-mono text-center" style={{ color: C.accent }}>{currentTest.name} · 마지막 단계</p>
               <div className="p-5 rounded-2xl border shadow-sm mb-4" style={{ background: C.card, borderColor: C.line }}>
-                <h2 className="text-sm font-bold mb-4 pb-2 border-b text-center" style={{ color: C.ink, borderColor: C.line }}>피검사자 정보 입력</h2>
+                <h2 className="text-sm font-bold mb-4 pb-2 border-b text-center font-headline" style={{ color: C.ink, borderColor: C.line }}>피검사자 정보 입력</h2>
                 <Field label="이름" value={athlete.name} onChange={(v) => setAthlete((a) => ({ ...a, name: v }))} placeholder="예: 홍길동" />
                 <Field label="휴대폰 번호 뒷자리 4자리" type="tel" value={athlete.phone4} onChange={(v) => setAthlete((a) => ({ ...a, phone4: sanitizePhone4(v) }))} placeholder="예: 1234" />
                 <Field label="소속 팀 / 학과" value={athlete.org} onChange={(v) => setAthlete((a) => ({ ...a, org: v }))} placeholder="예: OO대학교 / OO팀" />
@@ -1778,7 +1753,7 @@ export default function App() {
             <div className="pt-2">
               <div ref={resultsCaptureRef} style={{ background: C.paper }}>
                 <div className="p-4 rounded-xl border mb-4 text-center" style={{ background: C.card, borderColor: C.line }}>
-                  <h2 className="text-base font-bold" style={{ color: C.ink }}>{savedEntry.athlete.name} 선수 결과</h2>
+                  <h2 className="text-base font-bold font-headline" style={{ color: C.ink }}>{savedEntry.athlete.name} 선수 결과</h2>
                   <p className="text-xs" style={{ color: C.inkDim }}>{savedEntry.athlete.org} · {savedEntry.athlete.sport}</p>
                 </div>
 
@@ -1804,7 +1779,7 @@ export default function App() {
               <button onClick={() => setScreen('intro')} className="text-xs font-mono font-bold flex items-center gap-1 mb-6 px-2 py-1 rounded mx-auto" style={{ color: C.inkDim }}>
                 <ChevronLeft size={16} /> 돌아가기
               </button>
-              <h2 className="text-base font-bold mb-6" style={{ color: C.ink }}>결과를 어떻게 확인할까요?</h2>
+              <h2 className="text-base font-bold mb-6 font-headline" style={{ color: C.ink }}>결과를 어떻게 확인할까요?</h2>
 
               <button
                 onClick={() => { setScreen('lookup'); setLookupRows(null); setLookupError(''); setLookupDetailIdx(null); }}
@@ -1842,10 +1817,10 @@ export default function App() {
                 <div className="p-5 rounded-2xl border shadow-sm mb-4" style={{ background: C.card, borderColor: C.line }}>
                   <Field label="이름" value={lookupName} onChange={setLookupName} placeholder="검사 때 입력한 이름" />
                   <Field label="휴대폰 번호 뒷자리 4자리" type="tel" value={lookupPhone4} onChange={(v) => setLookupPhone4(sanitizePhone4(v))} placeholder="예: 1234" />
-                  <button onClick={doLookup} disabled={lookupLoading} className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-50" style={{ background: C.solid, color: '#FFF' }}>
+                  <button onClick={doLookup} disabled={lookupLoading} className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-50" style={{ background: C.ink, color: '#FFF' }}>
                     <Search size={16} /> {lookupLoading ? '조회 중...' : '조회하기'}
                   </button>
-                  {lookupError && <p className="text-xs font-bold mt-3" style={{ color: C.accent }}>{lookupError}</p>}
+                  {lookupError && <p className="text-xs font-bold mt-3" style={{ color: C.warn }}>{lookupError}</p>}
                 </div>
               )}
 
@@ -1888,7 +1863,7 @@ export default function App() {
                   </button>
                   <div ref={lookupCaptureRef} style={{ background: C.paper }}>
                     <div className="p-4 rounded-xl border mb-4 text-center" style={{ background: C.card, borderColor: C.line }}>
-                      <h2 className="text-base font-bold" style={{ color: C.ink }}>{lookupName} 선수 결과</h2>
+                      <h2 className="text-base font-bold font-headline" style={{ color: C.ink }}>{lookupName} 선수 결과</h2>
                       <p className="text-xs" style={{ color: C.inkDim }}>
                         {new Date(lookupRows[lookupDetailIdx].timestamp).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                         {' · '}{lookupRows[lookupDetailIdx].org} · {lookupRows[lookupDetailIdx].sport}
@@ -1921,20 +1896,20 @@ export default function App() {
               {!adminRows && (
                 <div className="p-5 rounded-2xl border shadow-sm mb-4" style={{ background: C.card, borderColor: C.line }}>
                   <Field label="관리자 비밀번호" type="password" value={adminPassword} onChange={setAdminPassword} placeholder="비밀번호 입력" />
-                  <button onClick={doAdminLogin} disabled={adminLoading} className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-50" style={{ background: C.solid, color: '#FFF' }}>
+                  <button onClick={doAdminLogin} disabled={adminLoading} className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-50" style={{ background: C.ink, color: '#FFF' }}>
                     <Lock size={16} /> {adminLoading ? '확인 중...' : '로그인'}
                   </button>
-                  {adminError && <p className="text-xs font-bold mt-3" style={{ color: C.accent }}>{adminError}</p>}
+                  {adminError && <p className="text-xs font-bold mt-3" style={{ color: C.warn }}>{adminError}</p>}
                 </div>
               )}
 
               {adminRows && adminDetailIdx === null && (
                 <div className="text-left">
                   <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-base font-bold" style={{ color: C.ink }}>전체 검사 결과</h2>
+                    <h2 className="text-base font-bold font-headline" style={{ color: C.ink }}>전체 검사 결과</h2>
                     <span className="text-xs font-mono font-bold px-2 py-0.5 rounded" style={{ background: C.paperDim, color: C.inkDim }}>{adminRows.length}건</span>
                   </div>
-                  <button onClick={exportAdminCSV} disabled={!adminRows.length} className="w-full mb-4 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 shadow-sm" style={{ background: C.solid, color: '#FFF' }}>
+                  <button onClick={exportAdminCSV} disabled={!adminRows.length} className="w-full mb-4 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 shadow-sm" style={{ background: C.ink, color: '#FFF' }}>
                     <Download size={15} /> CSV 다운로드
                   </button>
 
@@ -1975,7 +1950,7 @@ export default function App() {
                   </button>
                   <div ref={adminCaptureRef} style={{ background: C.paper }}>
                     <div className="p-4 rounded-xl border mb-4 text-center" style={{ background: C.card, borderColor: C.line }}>
-                      <h2 className="text-base font-bold" style={{ color: C.ink }}>{adminRows[adminDetailIdx].name} 선수 결과</h2>
+                      <h2 className="text-base font-bold font-headline" style={{ color: C.ink }}>{adminRows[adminDetailIdx].name} 선수 결과</h2>
                       <p className="text-xs" style={{ color: C.inkDim }}>{adminRows[adminDetailIdx].org} · {adminRows[adminDetailIdx].sport}</p>
                     </div>
                     <ResultsBlock
@@ -2000,12 +1975,12 @@ export default function App() {
         <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center pointer-events-none">
           <div className="w-full max-w-lg px-4 pb-6 pt-3 pointer-events-auto" style={{ background: `linear-gradient(to top, ${C.paper} 90%, transparent)` }}>
             {errorMsg && (
-              <div className="flex items-center justify-center gap-1.5 mb-2 text-xs font-bold p-2 rounded-lg border" style={{ color: C.accent, background: 'var(--accent-soft-bg)', borderColor: 'var(--accent-soft-border)' }}>
+              <div className="flex items-center justify-center gap-1.5 mb-2 text-xs font-bold p-2 rounded-lg border" style={{ color: C.warn, background: 'var(--warn-soft-bg)', borderColor: 'var(--warn-soft-border)' }}>
                 <AlertCircle size={14} /><span>{errorMsg}</span>
               </div>
             )}
             {screen === 'quiz' && (
-              <button onClick={goToAthleteInfo} className="w-full py-4 rounded-xl font-bold flex items-center justify-center gap-1 text-base shadow-md" style={{ background: C.solid, color: '#FFF' }}>
+              <button onClick={goToAthleteInfo} className="w-full py-4 rounded-xl font-bold flex items-center justify-center gap-1 text-base shadow-md" style={{ background: C.ink, color: '#FFF' }}>
                 다음 <ChevronRight size={18} />
               </button>
             )}
