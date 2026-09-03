@@ -1576,7 +1576,7 @@ export default function App() {
     setSavingImage(true);
     try {
       // html2canvas는 var(--x) 같은 CSS 변수 참조를 옵션값으로는 못 읽어서, 실제 계산된 색으로 먼저 풀어준다.
-      const resolvedPaper = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim() || '#F8F9FA';
+      const resolvedPaper = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim() || '#F6F7F9';
       const canvas = await html2canvas(ref.current, { backgroundColor: resolvedPaper, scale: 2, useCORS: true });
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
