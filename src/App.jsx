@@ -1307,7 +1307,8 @@ function ConsultNudge({ concern }) {
 }
 
 // 레이더차트/척도카드 묶음 — 검사 직후 결과 화면과 개인 조회 상세 화면에서 공용으로 사용.
-// 하위척도가 1개뿐인 검사(예: ATQ-N)는 레이더차트를 생략한다.
+// 레이더차트는 축이 2개면 다각형이 아니라 직선으로 찌그러져 보이므로, 하위척도가 3개 이상일 때만 그린다.
+// (예: ATQ-N 1개, 경기스트레스·운동열정 검사지 2개는 레이더 없이 점수 카드만 표시)
 function ResultsBlock({ title, merged }) {
   return (
     <>
@@ -1315,7 +1316,7 @@ function ResultsBlock({ title, merged }) {
       <p className="text-[11px] leading-relaxed text-center mt-1 mb-1 px-4" style={{ color: C.inkDim }}>
         이 결과는 현재 시점의 자기응답 경향을 보여주는 참고 자료이며, 확정된 능력이나 진단을 의미하지 않아요.
       </p>
-      {merged.length > 1 && (
+      {merged.length > 2 && (
         <ScoreRadar data={merged.map((s) => ({ subject: s.name, value: Number(s.norm.toFixed(1)) }))} />
       )}
       <div className="rounded-2xl border p-2 mt-3 shadow-sm" style={{ background: C.card, borderColor: C.line }}>
