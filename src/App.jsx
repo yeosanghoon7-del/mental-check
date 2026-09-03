@@ -1644,13 +1644,19 @@ export default function App() {
 
         <div className="sticky top-0 z-10 pt-3 pb-2 border-b mb-2" style={{ background: C.paper, borderColor: C.line }}>
           <div className="flex items-center justify-between">
-            <div className="w-16 flex items-center justify-start">
+            <button
+              onClick={() => (screen === 'quiz' ? setConfirmGoIntro(true) : setScreen('intro'))}
+              className="w-16 flex items-center justify-start transition-transform active:scale-95"
+            >
               <img src="/kspci-logo.png" alt="계명대학교" className="h-10 w-12 object-contain" />
-            </div>
-            <div className="text-center flex-1">
+            </button>
+            <button
+              onClick={() => (screen === 'quiz' ? setConfirmGoIntro(true) : setScreen('intro'))}
+              className="text-center flex-1 transition-transform active:scale-95"
+            >
               <p className="text-[10px] font-mono font-bold tracking-widest uppercase" style={{ color: C.accent }}>KSPCI</p>
               <h1 className="text-lg font-black tracking-tight font-headline" style={{ color: C.ink }}>스포츠심리검사</h1>
-            </div>
+            </button>
             <div className="w-16 flex flex-col items-end gap-1.5">
               {!['resultsHome', 'lookup', 'admin'].includes(screen) && (
                 <button onClick={goResultsHome} className="text-xs font-bold px-2.5 py-1.5 border whitespace-nowrap transition-transform active:scale-95" style={{ borderColor: C.line, color: C.inkDim, background: C.card }}>
