@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
-import { ChevronRight, ChevronLeft, Check, Download, AlertCircle, RotateCcw, Smartphone, X, Lock, Search, User, Clock, Image } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, Download, AlertCircle, RotateCcw, Smartphone, X, Lock, Search, User, Clock, Image, Instagram } from 'lucide-react';
 
 /* ============ Design tokens ============ */
 // index.html의 :root 에 정의된 CSS 변수를 그대로 참조한다.
@@ -21,6 +21,9 @@ const C = {
 // Apps Script를 웹앱으로 배포한 뒤 나오는 URL을 여기에 붙여넣으면 클라우드 저장/조회가 활성화됩니다.
 // 비어있으면 기존처럼 이 기기의 localStorage에만 저장됩니다.
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzm-viLiL-b1ifpdHl703OgPJ4Q9EwNKd7NREUCrtve0bT1164lzqKuH14lMf1L8h9X/exec';
+
+/* ============ 상담 신청 연결 ============ */
+const CONSULT_URL = 'https://www.instagram.com/k_s_p_c_i/';
 
 /* ============ TOPS2 수행전략검사 ============ */
 const TOPS2_ITEMS = [
@@ -1267,6 +1270,42 @@ function ScoreRow({ name, raw, max, norm, def, high, low, tip, positive }) {
   );
 }
 
+// merged 점수 중 "주의가 필요한" 항목(좋은 방향과 반대로 튄 항목)이 하나라도 있는지 — ScoreRow와 동일한 기준
+function hasConcerningScore(merged) {
+  return merged.some((s) => {
+    const level = s.norm >= 60 ? 'high' : s.norm <= 40 ? 'low' : 'mid';
+    if (level === 'mid') return false;
+    const isGood = (level === 'high') === s.positive;
+    return !isGood;
+  });
+}
+
+// 검사 결과 화면 하단에 붙는 상담 신청 유도 카드 — 주의가 필요한 항목이 있으면 톤을 조금 더 강조한다
+function ConsultNudge({ concern }) {
+  return (
+    <a
+      href={CONSULT_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="w-full py-4 px-4 mt-6 rounded-xl border flex items-center gap-3 shadow-sm transition-transform active:scale-95"
+      style={{ background: concern ? C.ink : C.card, borderColor: concern ? C.ink : C.line }}
+    >
+      <div className="p-2.5 rounded-xl flex-shrink-0" style={{ background: concern ? 'rgba(255,255,255,0.14)' : 'var(--accent-tint)' }}>
+        <Instagram size={20} style={{ color: concern ? '#FFF' : C.accent }} />
+      </div>
+      <div className="text-left flex-1">
+        <p className="text-sm font-bold" style={{ color: concern ? '#FFF' : C.ink }}>
+          {concern ? '결과에 대해 전문가와 상담해보세요' : '결과가 궁금하다면 상담을 신청해보세요'}
+        </p>
+        <p className="text-xs mt-0.5" style={{ color: concern ? 'rgba(255,255,255,0.7)' : C.inkDim }}>
+          KSPCI 인스타그램에서 상담 신청 및 문의가 가능해요
+        </p>
+      </div>
+      <ChevronRight size={18} style={{ color: concern ? 'rgba(255,255,255,0.7)' : C.inkDim, flexShrink: 0 }} />
+    </a>
+  );
+}
+
 // 레이더차트/척도카드 묶음 — 검사 직후 결과 화면과 개인 조회 상세 화면에서 공용으로 사용.
 // 하위척도가 1개뿐인 검사(예: ATQ-N)는 레이더차트를 생략한다.
 function ResultsBlock({ title, merged }) {
@@ -1759,6 +1798,8 @@ export default function App() {
 
                 <ResultsBlock title={currentTest.name} merged={resultsMerged} />
               </div>
+
+              <ConsultNudge concern={hasConcerningScore(resultsMerged)} />
 
               <button
                 onClick={() => saveAsImage(resultsCaptureRef, `${savedEntry.athlete.name}_${currentTest.name}_결과.png`)}
