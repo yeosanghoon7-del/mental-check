@@ -72,7 +72,7 @@ const TOPS2_SUBSCALES = [
     low: '혼잣말을 거의 활용하지 못하거나, 활용해도 효과를 못 느끼고 있어요.',
     tip: '시합 전 짧고 구체적인 격려·지시 문구(예: "짧고 강하게")를 미리 정해두고 훈련에서부터 반복해보세요.' },
   { key: 'emotionControl', name: '감정조절', items: [5, 6, 7, 8], reverse: [5, 6, 7, 8], positive: true,
-    def: '경기 전이나 중에 유발되는 감정(부담·흥분·실수 후 동요)을 다스리는 능력.',
+    def: '경기 전이나 중에 유발되는 감정(부담·흥분·실수 후 동요)을 다스리는 정도.',
     high: '압박이 큰 상황에서도 감정 기복 없이 평정심을 잘 유지해요.',
     low: '부담이 크거나 실수를 하면 감정이 쉽게 흔들리는 편이에요.',
     tip: '실수 직후 쓰는 짧은 리셋 루틴(호흡 1회 + 정해둔 동작)을 만들어 감정이 이어지지 않도록 끊어보세요.' },
@@ -92,7 +92,7 @@ const TOPS2_SUBSCALES = [
     low: '심상 훈련을 거의 활용하지 않거나 이미지가 잘 그려지지 않는 편이에요.',
     tip: '훈련 전후 5분씩, 성공적인 수행 장면을 시각·촉각·소리까지 함께 떠올리는 연습을 루틴화해보세요.' },
   { key: 'relaxation', name: '긴장풀기', items: [20, 21, 22, 23], reverse: [], positive: true,
-    def: '어려운 상황에서도 스스로를 침착하고 편안한 상태로 되돌리는 능력.',
+    def: '어려운 상황에서도 스스로를 침착하고 편안한 상태로 되돌리는 정도.',
     high: '긴장이 높아져도 스스로 이완 상태로 전환하는 방법을 잘 알고 있어요.',
     low: '한 번 긴장하면 스스로 풀기 어려워하는 편이에요.',
     tip: '점진적 근육이완이나 4-4-8 호흡 같은 구체적 이완 루틴을 정해 시합 전 루틴에 포함시켜보세요.' },
@@ -389,7 +389,7 @@ const SPORT_SKILL_SUBSCALES = [
     low: '팀 내 관계나 소속감에서 어려움을 느끼는 편이에요.',
     tip: '팀 동료에게 먼저 작은 격려나 인정의 말을 건네는 것부터 시작해보세요.' },
   { key: 'imagery', name: '심상', items: [6, 20, 24, 26], reverse: [], positive: true,
-    def: '성공적인 수행 장면을 머릿속으로 생생하게 그려보는 능력.',
+    def: '성공적인 수행 장면을 머릿속으로 생생하게 그려보는 정도.',
     high: '원하는 동작과 성공 장면을 생생하게 상상하는 훈련이 잘 되어 있어요.',
     low: '심상 훈련을 거의 활용하지 않거나 이미지가 잘 그려지지 않는 편이에요.',
     tip: '훈련 전후 몇 분씩 성공 장면을 시각·촉각·소리까지 함께 떠올리는 연습을 루틴화해보세요.' },
@@ -399,7 +399,7 @@ const SPORT_SKILL_SUBSCALES = [
     low: '힘든 상황에서 의지가 쉽게 꺾이는 편이에요.',
     tip: '힘든 순간에 스스로에게 되뇔 짧은 다짐 문구를 미리 정해두고 훈련 중 실제로 사용해보세요.' },
   { key: 'anxietyControl', name: '불안조절', items: [2, 5, 13, 17], reverse: [2, 5, 13, 17], positive: true,
-    def: '시합 전후의 긴장·걱정을 스스로 다스리는 능력.',
+    def: '시합 전후의 긴장·걱정을 스스로 다스리는 정도.',
     high: '긴장되는 상황에서도 스스로 마음을 잘 다스리는 편이에요.',
     low: '시합 전후 긴장·걱정이 크고 스스로 다스리기 어려운 편이에요.',
     tip: '호흡 조절이나 루틴화된 이완 동작을 시합 전 준비 과정에 포함시켜보세요.' },
@@ -457,12 +457,12 @@ const ACSI28_LIKERT = [
 
 const ACSI28_SUBSCALES = [
   { key: 'adversity', name: '역경에 대한 대처', items: [25, 26, 27, 28], reverse: [], positive: true,
-    def: '실패나 어려운 상황에서도 포기하지 않고 다시 노력하며 집중하는 능력.',
+    def: '실패나 어려운 상황에서도 포기하지 않고 다시 노력하며 집중하는 정도.',
     high: '역경 속에서도 집중력을 잃지 않고 더 노력하는 편이에요.',
     low: '어려운 상황에서 대처가 다소 약한 편이에요.',
     tip: '실패 직후 "이번엔 무엇을 다르게 할까"를 짧게 되짚는 루틴을 만들어보세요.' },
   { key: 'peaking', name: '압박감 해소', items: [7, 17, 20, 23], reverse: [7, 23], positive: true,
-    def: '압박 상황에서 스스로를 침착하게 만들고 최고 기량을 발휘하는 능력.',
+    def: '압박 상황에서 스스로를 침착하게 만들고 최고 기량을 발휘하는 정도.',
     high: '압박 상황에서도 스스로를 잘 다스리며 침착함을 유지해요.',
     low: '압박 상황에서 다른 사람의 시선이나 실패 상상에 영향을 많이 받는 편이에요.',
     tip: '시합 전 스스로에게 건네는 침착 신호(문구·호흡)를 미리 정해 반복 연습해보세요.' },
@@ -472,7 +472,7 @@ const ACSI28_SUBSCALES = [
     low: '시합 결과에 대한 걱정이나 지적에 대한 감정 반응이 큰 편이에요.',
     tip: '지적을 받았을 때 바로 반응하기보다 한 박자 쉬고 받아들이는 연습을 해보세요.' },
   { key: 'concentration', name: '집중력', items: [15, 16, 22, 24], reverse: [], positive: true,
-    def: '예상치 못한 상황이나 지적에도 흔들리지 않고 정서적 안정을 유지하는 능력.',
+    def: '예상치 못한 상황이나 지적에도 흔들리지 않고 정서적 안정을 유지하는 정도.',
     high: '예상 밖의 상황에서도 정서적으로 안정되고 유연하게 대처하는 편이에요.',
     low: '예상치 못한 상황이 생기면 다소 흔들리는 편이에요.',
     tip: '훈련 중 일부러 변수를 넣어보고 그에 적응하는 연습을 해보세요.' },
@@ -641,7 +641,7 @@ const EXPERSIST_ITEMS = [
 
 const EXPERSIST_SUBSCALES = [
   { key: 'ability', name: '운동능력', items: [1, 2, 3, 4], reverse: [], positive: true,
-    def: '운동에 대한 자신감과 승부욕, 어려움을 이겨내는 능력.',
+    def: '운동에 대한 자신감과 승부욕, 어려움을 이겨내는 정도.',
     high: '운동 능력에 대한 자신감과 승부욕이 좋은 편이에요.',
     low: '운동 능력에 대한 자신감이 다소 낮은 편이에요.',
     tip: '내가 남들보다 잘하는 동작 하나를 정해두고 자주 떠올려보세요.' },
@@ -708,27 +708,27 @@ const SIAQ_LIKERT = [
 
 const SIAQ_SUBSCALES = [
   { key: 'skill', name: '기술 심상능력', items: [3, 8, 12], reverse: [], positive: true,
-    def: '특정 기술을 개선·향상하는 장면을 머릿속으로 그려보는 능력.',
+    def: '특정 기술을 개선·향상하는 장면을 머릿속으로 그려보는 정도.',
     high: '기술 개선 장면을 생생하게 상상할 수 있는 편이에요.',
     low: '기술 관련 심상이 잘 그려지지 않는 편이에요.',
     tip: '훈련 직후, 방금 고치려던 동작이 잘 되는 모습을 짧게 상상해보세요.' },
   { key: 'strategy', name: '전략 심상능력', items: [1, 6, 13], reverse: [], positive: true,
-    def: '경기 계획과 전략, 대안을 머릿속으로 세워보는 능력.',
+    def: '경기 계획과 전략, 대안을 머릿속으로 세워보는 정도.',
     high: '계획과 전략을 머릿속으로 잘 그려보는 편이에요.',
     low: '전략을 상상으로 미리 그려보는 것이 어려운 편이에요.',
     tip: '시합 전날, 예상 상황별 대응 전략을 머릿속으로 리허설해보세요.' },
   { key: 'goal', name: '목표 심상능력', items: [5, 9, 14], reverse: [], positive: true,
-    def: '목표를 달성한 순간(우승, 메달 등)을 생생하게 상상하는 능력.',
+    def: '목표를 달성한 순간(우승, 메달 등)을 생생하게 상상하는 정도.',
     high: '목표 달성 장면을 생생하게 상상할 수 있는 편이에요.',
     low: '목표 달성 장면을 상상하는 것이 잘 안 되는 편이에요.',
     tip: '목표를 이룬 순간의 장면을 구체적인 디테일과 함께 떠올려보세요.' },
   { key: 'affect', name: '정서 심상능력', items: [4, 7, 11], reverse: [], positive: true,
-    def: '경기와 관련된 감정(흥분, 기대, 긍정적 느낌)을 상상하는 능력.',
+    def: '경기와 관련된 감정(흥분, 기대, 긍정적 느낌)을 상상하는 정도.',
     high: '경기와 관련된 감정을 생생하게 느끼며 상상할 수 있는 편이에요.',
     low: '경기 관련 감정을 상상으로 불러오는 것이 어려운 편이에요.',
     tip: '심상 훈련 시 장면뿐 아니라 그때 느낄 감정까지 함께 떠올려보세요.' },
   { key: 'mastery', name: '숙달 심상능력', items: [2, 10, 15], reverse: [], positive: true,
-    def: '어려운 상황에서도 긍정적인 마음과 자신감을 유지하는 모습을 상상하는 능력.',
+    def: '어려운 상황에서도 긍정적인 마음과 자신감을 유지하는 모습을 상상하는 정도.',
     high: '어려운 상황에서도 침착함을 유지하는 모습을 잘 상상하는 편이에요.',
     low: '힘든 상황을 이겨내는 모습을 상상하는 것이 어려운 편이에요.',
     tip: '가장 힘들었던 순간을 떠올리고, 그걸 침착하게 이겨내는 장면으로 다시 그려보세요.' },
@@ -1312,6 +1312,9 @@ function ResultsBlock({ title, merged }) {
   return (
     <>
       <p className="text-xs font-bold font-mono uppercase tracking-wider text-center" style={{ color: C.accent }}>{title}</p>
+      <p className="text-[11px] leading-relaxed text-center mt-1 mb-1 px-4" style={{ color: C.inkDim }}>
+        이 결과는 현재 시점의 자기응답 경향을 보여주는 참고 자료이며, 확정된 능력이나 진단을 의미하지 않아요.
+      </p>
       {merged.length > 1 && (
         <ScoreRadar data={merged.map((s) => ({ subject: s.name, value: Number(s.norm.toFixed(1)) }))} />
       )}
@@ -1761,6 +1764,10 @@ export default function App() {
               >
                 <ChevronLeft size={14} /> 처음 화면으로
               </button>
+              <div className="mb-4 p-3.5 rounded-xl text-xs leading-relaxed" style={{ background: 'var(--accent-tint)', color: C.inkDim }}>
+                <p className="font-bold mb-0.5" style={{ color: C.ink }}>솔직하게 응답해주세요</p>
+                이 검사는 정답이 없어요. 평소 자신의 모습에 가까운 답을 고르면 되고, 약 {Math.max(2, Math.round(currentTest.items.length * 10 / 60))}분 정도 걸려요. 응답 내용은 비밀이 보장됩니다.
+              </div>
               {currentTest.items.map((it) => (
                 <LikertItem key={it.no} no={it.no} text={it.text} options={currentTest.likert} value={responses[it.no]} onChange={(no, v) => setResponses((r) => ({ ...r, [no]: v }))} idPrefix="quiz" />
               ))}
