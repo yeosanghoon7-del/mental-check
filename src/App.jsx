@@ -1856,7 +1856,6 @@ export default function App() {
                 <div className="p-2.5 rounded-xl" style={{ background: C.paperDim }}><Lock size={20} style={{ color: C.accent }} /></div>
                 <div>
                   <p className="text-sm font-bold" style={{ color: C.ink }}>관리자 로그인</p>
-                  <p className="text-xs" style={{ color: C.inkDim }}>비밀번호로 전체 선수 결과를 확인해요.</p>
                 </div>
               </button>
             </div>
