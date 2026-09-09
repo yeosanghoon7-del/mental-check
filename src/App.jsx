@@ -240,6 +240,7 @@ const ATQN_TEST = {
   id: 'atqn',
   name: '자동적 사고 척도-부정형',
   shortDesc: '부정적 자동사고의 빈도 (단일 총점)',
+  category: 'general',
   items: ATQN_ITEMS,
   likert: ATQN_LIKERT,
   scaleMax: 4,
@@ -320,6 +321,7 @@ const CONNERS_TEST = {
   id: 'conners',
   name: '한국판 Conners 성인 ADHD 평정척도',
   shortDesc: '부주의·과잉행동·충동성·자기개념 등 성인 ADHD 관련 특성',
+  category: 'general',
   items: CONNERS_ITEMS,
   likert: CONNERS_LIKERT,
   scaleMax: 3,
@@ -1007,9 +1009,16 @@ const EXSTRESS_TEST = {
 };
 
 const TESTS = [
-  SPORT_SKILL_TEST, CSAI2_TEST, TOPS2_TEST, ATQN_TEST, CONNERS_TEST,
+  // 일반심리검사(스포츠 종목에 국한되지 않는 검사)를 먼저, 스포츠심리검사를 그다음에 배치
+  ATQN_TEST, CONNERS_TEST,
+  SPORT_SKILL_TEST, CSAI2_TEST, TOPS2_TEST,
   ACSI28_TEST, SELFMGMT_TEST, SPORTCONF_TEST, EXPERSIST_TEST, SIAQ_TEST,
   REFEREE_TEST, MATCHSTRESS_TEST, PASSION_TEST, SLUMP_TEST, EXSTRESS_TEST,
+];
+
+const TEST_CATEGORIES = [
+  { key: 'general', label: '일반심리검사' },
+  { key: 'sport', label: '스포츠심리검사' },
 ];
 
 function getTestById(id) {
@@ -1739,26 +1748,35 @@ export default function App() {
           {screen === 'intro' && (
             <div className="pt-2">
               <p className="text-xs font-bold mb-3 px-1 text-left" style={{ color: C.inkDim }}>실시할 검사를 선택하세요</p>
-              <div className="grid grid-cols-2 gap-2.5">
-                {TESTS.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => !t.comingSoon && startTest(t.id)}
-                    disabled={!!t.comingSoon}
-                    className="p-4 rounded-2xl border shadow-sm text-center flex flex-col items-center justify-center gap-1.5 disabled:opacity-50 min-h-[96px]"
-                    style={{ background: C.card, borderColor: C.line }}
-                  >
-                    <p className="text-sm font-bold leading-snug" style={{ color: C.ink }}>{t.name}</p>
-                    {t.comingSoon ? (
-                      <span className="text-[10px] font-bold px-2 py-1 rounded-full whitespace-nowrap" style={{ background: C.paperDim, color: C.inkDim }}>
-                        <Clock size={10} style={{ display: 'inline', marginRight: 2, verticalAlign: '-1px' }} />준비중
-                      </span>
-                    ) : (
-                      <p className="text-[11px] font-mono font-bold" style={{ color: C.accent }}>{t.items.length}문항</p>
-                    )}
-                  </button>
-                ))}
-              </div>
+              {TEST_CATEGORIES.map(({ key, label }) => {
+                const testsInGroup = TESTS.filter((t) => (t.category || 'sport') === key);
+                if (!testsInGroup.length) return null;
+                return (
+                  <div key={key} className="mb-5">
+                    <p className="text-xs font-bold mb-2 px-1 text-left" style={{ color: C.accent }}>{label}</p>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {testsInGroup.map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => !t.comingSoon && startTest(t.id)}
+                          disabled={!!t.comingSoon}
+                          className="p-4 rounded-2xl border shadow-sm text-center flex flex-col items-center justify-center gap-1.5 disabled:opacity-50 min-h-[96px]"
+                          style={{ background: C.card, borderColor: C.line }}
+                        >
+                          <p className="text-sm font-bold leading-snug" style={{ color: C.ink }}>{t.name}</p>
+                          {t.comingSoon ? (
+                            <span className="text-[10px] font-bold px-2 py-1 rounded-full whitespace-nowrap" style={{ background: C.paperDim, color: C.inkDim }}>
+                              <Clock size={10} style={{ display: 'inline', marginRight: 2, verticalAlign: '-1px' }} />준비중
+                            </span>
+                          ) : (
+                            <p className="text-[11px] font-mono font-bold" style={{ color: C.accent }}>{t.items.length}문항</p>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
