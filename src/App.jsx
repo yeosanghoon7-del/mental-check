@@ -1398,6 +1398,12 @@ function isInAppBrowser() {
   return /KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|FB_IAB|Line\/|DaumApps|everytimeApp/i.test(ua);
 }
 
+// 공유 시트(navigator.share)는 모바일 저장 흐름에서만 도움이 된다. 윈도우/맥 노트북에서는
+// 파일을 "보내기"만 하고 실제 저장으로 안 이어지는 OS 공유창이 떠서 오히려 헷갈리게 한다.
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+}
+
 // 아이패드 등에서는 캔버스가 한 변 4096px(또는 전체 약 1600만 픽셀)을 넘으면 빈 이미지가 만들어진다.
 // 결과지가 길수록 이 한계에 먼저 걸리므로, 요소 크기에 맞춰 배율을 안전 범위로 낮춘다.
 function safeCanvasScale(width, height) {
@@ -2176,9 +2182,11 @@ export default function App() {
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
       if (!blob) throw new Error('canvas is empty');
 
-      // 1순위: 공유 시트 — 모바일에서 "이미지 저장"으로 바로 넘길 수 있고 인앱 브라우저에서도 대체로 동작한다.
+      // 1순위(모바일 전용): 공유 시트로 "이미지 저장"에 바로 넘긴다.
+      // 윈도우/맥 노트북은 canShare가 true를 줘도 실제로는 "보내기"만 하는 OS 공유창이 뜨고
+      // 파일로 저장되지 않으므로, 데스크톱에서는 이 경로를 아예 타지 않고 바로 다운로드한다.
       const file = new File([blob], filename, { type: 'image/png' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      if (isMobileDevice() && navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({ files: [file] });
           return;
