@@ -1027,40 +1027,143 @@ const TEST_CATEGORIES = [
 // 여러 검사를 본 선수의 결과를 한 장으로 합쳐 보기 위한 영역 구분.
 // ※ 원척도들의 공식 요인구조가 아니라 이 앱에서 묶은 잠정 분류다. 지도교수 검토 후 조정할 것.
 const PROFILE_DOMAINS = [
-  { key: 'pressure', label: '경쟁불안·압박 대처' },
-  { key: 'focus', label: '주의·수행 몰입' },
-  { key: 'confidence', label: '자신감·동기' },
-  { key: 'selfmgmt', label: '목표·훈련 자기관리' },
-  { key: 'imagery', label: '심상 활용' },
-  { key: 'support', label: '대인·환경 지지' },
+  { key: 'pressure', label: '경쟁압박 대처력' },
+  { key: 'focus', label: '수행 몰입 · 주의조절' },
+  { key: 'goalwill', label: '목표 · 의지 · 팀관계' },
+  { key: 'environment', label: '훈련 환경 · 지속 여건' },
   { key: 'etc', label: '기타 지표' },
 ];
 
 // 하위척도 이름 → 영역. 이름이 같은 척도(목표설정·심상·집중력)는 검사가 달라도 같은 지표로 본다.
 const SUBSCALE_DOMAIN = {
-  '인지적불안': 'pressure', '신체적불안': 'pressure', '감정조절': 'pressure', '긴장풀기': 'pressure',
-  '불안조절': 'pressure', '역경에 대한 대처': 'pressure', '압박감 해소': 'pressure', '시합 걱정의 자유': 'pressure',
+  '인지적불안': 'pressure', '신체적불안': 'pressure', '상태자신감': 'pressure', '감정조절': 'pressure',
+  '긴장풀기': 'pressure', '불안조절': 'pressure', '부정적생각': 'pressure', '부정적 자동사고': 'pressure',
+  '역경에 대한 대처': 'pressure', '압박감 해소': 'pressure', '시합 걱정의 자유': 'pressure',
   '경기스트레스': 'pressure', '심판스트레스': 'pressure', '심리요인': 'pressure',
 
-  '집중력': 'focus', '주의산만': 'focus', '자동적수행': 'focus', '혼잣말': 'focus',
-  '부정적생각': 'focus', '부정적 자동사고': 'focus',
+  '집중력': 'focus', '주의산만': 'focus', '자동적수행': 'focus', '혼잣말': 'focus', '자신감': 'focus',
+  '심상': 'focus', '기술 심상능력': 'focus', '전략 심상능력': 'focus', '목표 심상능력': 'focus',
+  '정서 심상능력': 'focus', '숙달 심상능력': 'focus',
 
-  '자신감': 'confidence', '상태자신감': 'confidence', '자신감과 성취동기': 'confidence', '능력입증': 'confidence',
-  '신체정신적준비': 'confidence', '의지력': 'confidence', '운동능력': 'confidence', '운동관심': 'confidence',
-  '조화열정': 'confidence', '강박열정': 'confidence', '진로고민': 'confidence', '기능 및 경기내용 불만': 'confidence',
+  '목표설정': 'goalwill', '목표설정 / 심리적 준비': 'goalwill', '자기코칭 행동': 'goalwill',
+  '의지력': 'goalwill', '팀조화': 'goalwill', '훈련관리': 'goalwill', '몸관리': 'goalwill',
+  '정신관리': 'goalwill', '대인관리': 'goalwill', '운동습관': 'goalwill', '능력입증': 'goalwill',
+  '신체정신적준비': 'goalwill', '자신감과 성취동기': 'goalwill', '조화열정': 'goalwill', '강박열정': 'goalwill',
+  '운동능력': 'goalwill', '운동관심': 'goalwill', '기술요인': 'goalwill', '신체요인': 'goalwill',
 
-  '목표설정': 'selfmgmt', '목표설정 / 심리적 준비': 'selfmgmt', '자기코칭 행동': 'selfmgmt',
-  '훈련관리': 'selfmgmt', '몸관리': 'selfmgmt', '정신관리': 'selfmgmt', '운동습관': 'selfmgmt',
-  '기술요인': 'selfmgmt', '신체요인': 'selfmgmt',
-
-  '심상': 'imagery', '기술 심상능력': 'imagery', '전략 심상능력': 'imagery', '목표 심상능력': 'imagery',
-  '정서 심상능력': 'imagery', '숙달 심상능력': 'imagery',
-
-  '팀조화': 'support', '대인관리': 'support', '사회적지지': 'support', '코치지도력': 'support',
-  '운동친구': 'support', '운동환경': 'support', '환경요인': 'support',
-  '지도력 불만': 'support', '개인시간 제약': 'support',
-  '공정성': 'support', '신속성': 'support', '일관성': 'support', '신뢰성': 'support',
+  '사회적지지': 'environment', '코치지도력': 'environment', '운동친구': 'environment', '운동환경': 'environment',
+  '환경요인': 'environment', '지도력 불만': 'environment', '개인시간 제약': 'environment',
+  '진로고민': 'environment', '기능 및 경기내용 불만': 'environment',
+  '공정성': 'environment', '신속성': 'environment', '일관성': 'environment', '신뢰성': 'environment',
 };
+
+// 방향을 뒤집은 지표는 이름도 함께 바꿔야 점수가 높은 게 좋은 뜻이라는 게 그대로 읽힌다.
+const INDICATOR_DISPLAY_NAME = {
+  '인지적불안': '인지적불안 대처', '신체적불안': '신체적불안 대처',
+  '부정적생각': '부정적 생각 관리', '부정적 자동사고': '부정적 생각 관리(일반)',
+  '주의산만': '주의산만 관리', '자동적수행': '자동수행', '자신감': '자신감 (수행특성)',
+  '경기스트레스': '경기스트레스 관리', '심판스트레스': '심판스트레스 관리', '강박열정': '강박열정 조절',
+  '심리요인': '심리적 슬럼프 관리', '기술요인': '기술적 슬럼프 관리',
+  '신체요인': '신체적 슬럼프 관리', '환경요인': '환경적 슬럼프 관리',
+  '지도력 불만': '지도자 관계 만족', '진로고민': '진로 안정감',
+  '기능 및 경기내용 불만': '경기력 만족', '개인시간 제약': '개인시간 여유',
+};
+
+// 낮게 나온 지표를 근거로 제안할 훈련 주제. 지표 하나하나가 아니라 주제 단위로 묶어 제안한다.
+const TRAINING_THEMES = [
+  {
+    key: 'arousal',
+    title: '경기 전 각성 · 주의 루틴 확립',
+    triggers: ['신체적불안', '인지적불안', '주의산만', '자동적수행', '긴장풀기', '불안조절', '압박감 해소'],
+    bullets: [
+      '워밍업에 호흡 조절 + 점진적 근육이완 3~5분을 고정 배치',
+      '경기 직전 시각·촉각·소리 3감각 체크리스트로 외부 자극에 대한 주의 전환을 연습',
+      '훈련 마무리 단계는 동작 분석 대신 성공 장면 이미지로 마무리',
+    ],
+  },
+  {
+    key: 'selfTalk',
+    title: '혼잣말 스크립트 구체화',
+    triggers: ['혼잣말', '부정적생각', '부정적 자동사고', '감정조절'],
+    bullets: [
+      '훈련 전 사용할 3문장 이내의 짧고 지시적인 self-talk 문구 3개를 작성',
+      '같은 문구를 훈련과 실전에서 동일하게 반복해 자동화',
+      '실수 직후 사용할 전환 문구를 따로 정해 두기',
+    ],
+  },
+  {
+    key: 'confidence',
+    title: '강점 기반 자신감 앵커링',
+    triggers: ['상태자신감', '자신감', '능력입증', '신체정신적준비', '자신감과 성취동기', '경기력 만족', '기능 및 경기내용 불만'],
+    bullets: [
+      '최근 성공 경험과 팀 동료 피드백을 묶은 "자신감 앵커" 문장·이미지를 만들기',
+      '경기 전 팀원과의 짧은 격려 루틴을 자신감 촉발 트리거로 고정',
+    ],
+  },
+  {
+    key: 'focus',
+    title: '집중 유지 · 재집중 루틴',
+    triggers: ['집중력', '시합 걱정의 자유'],
+    bullets: [
+      '주의가 흐트러진 순간을 알아차릴 신호(호흡·시선·발 위치)를 하나 정하기',
+      '"호흡 1회 → 어깨 힘 빼기 → 다음 동작" 3초 리셋 루틴을 훈련에서 반복',
+    ],
+  },
+  {
+    key: 'imagery',
+    title: '심상 훈련 구체화',
+    triggers: ['심상', '기술 심상능력', '전략 심상능력', '목표 심상능력', '정서 심상능력', '숙달 심상능력'],
+    bullets: [
+      '훈련 전후 3~5분씩 실제 경기 장면을 시각·촉각·소리까지 함께 떠올리기',
+      '성공 장면뿐 아니라 어려운 상황을 극복하는 장면도 함께 연습',
+    ],
+  },
+  {
+    key: 'goal',
+    title: '목표 설정 체계화',
+    triggers: ['목표설정', '목표설정 / 심리적 준비', '자기코칭 행동', '의지력'],
+    bullets: [
+      '시즌 목표를 주 단위 과정 목표 1~2개로 쪼개 훈련일지에 기록',
+      '결과 목표(승패)와 과정 목표(수행 내용)를 구분해 적기',
+    ],
+  },
+  {
+    key: 'selfmgmt',
+    title: '훈련 · 컨디션 자기관리 점검',
+    triggers: ['훈련관리', '몸관리', '정신관리', '운동습관', '기술요인', '신체요인'],
+    bullets: [
+      '수면·식사·회복 시간을 일주일간 기록해 흔들리는 요일을 먼저 찾기',
+      '훈련 강도와 컨디션을 10점 척도로 함께 적어 패턴을 확인',
+    ],
+  },
+  {
+    key: 'team',
+    title: '팀 · 지도자 관계 자원 활용',
+    triggers: ['팀조화', '대인관리', '사회적지지', '코치지도력', '운동친구', '지도력 불만'],
+    bullets: [
+      '경기 전후로 짧게 이야기 나눌 팀 내 지지자 1명을 정해 두기',
+      '지도자에게 확인받고 싶은 내용을 훈련 전 한 가지씩 질문으로 준비',
+    ],
+  },
+  {
+    key: 'stress',
+    title: '스트레스 요인 정리',
+    triggers: ['경기스트레스', '심판스트레스', '심리요인', '환경요인', '개인시간 제약', '진로고민'],
+    bullets: [
+      '스트레스를 주는 상황을 "내가 바꿀 수 있는 것 / 없는 것"으로 나눠 적기',
+      '바꿀 수 없는 항목에는 대응 루틴을, 바꿀 수 있는 항목에는 한 가지 행동을 정하기',
+    ],
+  },
+  {
+    key: 'passion',
+    title: '열정 균형 점검',
+    triggers: ['강박열정', '운동관심', '운동능력'],
+    bullets: [
+      '운동을 쉬어도 괜찮은 날을 주 1회 의도적으로 만들기',
+      '"해야 해서" 하는 훈련과 "하고 싶어서" 하는 훈련을 구분해 기록',
+    ],
+  },
+];
 
 function getTestById(id) {
   return TESTS.find((t) => t.id === id) || null;
@@ -1124,8 +1227,35 @@ function profileLevelText(v) {
   return '우선 점검 권장';
 }
 
+function domainLevelText(v) {
+  if (v >= 70) return '강점';
+  if (v >= 50) return '보통';
+  return '우선 점검';
+}
+
+// 도트 색: 표준 범위(40~60)를 기준으로 위쪽은 강점, 아래쪽은 보완 지점으로 읽히게 한다.
 function profileLevelColor(v) {
-  return v >= 60 ? C.accent2 : v >= 45 ? C.inkDim : C.warn;
+  return v >= 75 ? C.accent2 : v >= 50 ? C.accent : C.warn;
+}
+
+function fmtScore(v) {
+  return v.toFixed(1);
+}
+
+// 자동 생성 문장에 쓸 한글 조사 — 앞 단어의 받침 유무로 은/는, 이/가, 과/와를 고른다.
+function hasBatchim(word) {
+  const s = String(word || '');
+  const code = s.charCodeAt(s.length - 1);
+  if (Number.isNaN(code) || code < 0xac00 || code > 0xd7a3) return false;
+  return (code - 0xac00) % 28 !== 0;
+}
+
+function josa(word, withBatchim, withoutBatchim) {
+  return hasBatchim(word) ? withBatchim : withoutBatchim;
+}
+
+function joinKo(words) {
+  return words.reduce((acc, w, i) => (i === 0 ? w : `${acc}${josa(acc, '과', '와')} ${w}`), '');
 }
 
 // 여러 검사 결과를 하나의 프로파일로 합친다.
@@ -1145,25 +1275,31 @@ function buildIntegratedProfile(rows) {
   const byName = new Map();
   included.forEach(({ testDef, merged }) => {
     merged.forEach((s) => {
-      const cur = byName.get(s.name) || { name: s.name, values: [], sources: [], tip: s.tip };
-      cur.values.push(s.positive ? s.norm : 100 - s.norm);
-      cur.sources.push(testDef.name);
+      const cur = byName.get(s.name) || { name: s.name, perTest: [], tip: s.tip };
+      cur.perTest.push({ testName: testDef.name, value: s.positive ? s.norm : 100 - s.norm, raw: s.raw, max: s.max });
       byName.set(s.name, cur);
     });
   });
 
-  const indicators = [...byName.values()].map((it) => ({
-    name: it.name,
-    value: it.values.reduce((a, b) => a + b, 0) / it.values.length,
-    sources: it.sources,
-    tip: it.tip,
-    domain: SUBSCALE_DOMAIN[it.name] || 'etc',
-  }));
+  const indicators = [...byName.values()].map((it) => {
+    const merged = it.perTest.length > 1;
+    const base = INDICATOR_DISPLAY_NAME[it.name] || it.name;
+    return {
+      rawName: it.name,
+      name: merged ? `${base} (통합)` : base,
+      value: it.perTest.reduce((a, b) => a + b.value, 0) / it.perTest.length,
+      perTest: it.perTest,
+      sources: it.perTest.map((p) => p.testName),
+      tip: it.tip,
+      domain: SUBSCALE_DOMAIN[it.name] || 'etc',
+    };
+  });
 
   const domains = PROFILE_DOMAINS.map((d) => {
-    const list = indicators.filter((i) => i.domain === d.key);
+    const list = indicators.filter((i) => i.domain === d.key).sort((a, b) => b.value - a.value);
     if (!list.length) return null;
-    return { ...d, indicators: list, value: list.reduce((a, b) => a + b.value, 0) / list.length };
+    const value = list.reduce((a, b) => a + b.value, 0) / list.length;
+    return { ...d, indicators: list, value, level: domainLevelText(value), summary: describeDomain(list, value) };
   }).filter(Boolean);
 
   const composite = domains.length ? domains.reduce((a, d) => a + d.value, 0) / domains.length : 0;
@@ -1172,17 +1308,88 @@ function buildIntegratedProfile(rows) {
   const sorted = [...indicators].sort((a, b) => b.value - a.value);
   const strengthCount = Math.min(4, Math.max(1, Math.floor(indicators.length / 2)));
   const growthCount = Math.min(3, indicators.length - strengthCount);
+  const growth = growthCount > 0 ? sorted.slice(-growthCount).reverse() : [];
+  const topDomain = [...domains].sort((a, b) => b.value - a.value)[0];
 
   return {
     testCount: included.length,
     testNames: included.map((e) => e.testDef.name),
+    asOf: included.map((e) => e.timestamp).sort().slice(-1)[0] || null,
     indicators,
     domains,
     composite,
     strengths: sorted.slice(0, strengthCount),
-    growth: growthCount > 0 ? sorted.slice(-growthCount).reverse() : [],
+    growth,
+    observations: findObservations(indicators),
+    suggestions: buildSuggestions(sorted),
+    summary: topDomain
+      ? (() => {
+          const weakNames = joinKo(growth.slice(0, 2).map((g) => g.name));
+          return `${included.map((e) => e.testDef.name).join('·')} ${included.length}종의 응답을 하나의 척도(0~100, 높을수록 기능적)로 재정렬해 통합했습니다. ${topDomain.label} 영역(평균 ${fmtScore(topDomain.value)})이 ${domains.length}개 영역 중 가장 두드러진 강점이며, ${weakNames}${josa(weakNames, '이', '가')} 다음 훈련에서 우선적으로 다뤄볼 지점입니다.`;
+        })()
+      : '',
     excluded,
   };
+}
+
+// 영역별 해설 — 가장 높은 지표와 낮은 지표를 근거로 한두 문장을 만든다.
+function describeDomain(list, value) {
+  if (!list.length) return '';
+  const top = list[0];
+  const low = list[list.length - 1];
+  let text = `${top.name}(${fmtScore(top.value)})${josa(top.name, '이', '가')} 이 영역에서 가장 두드러진 강점입니다.`;
+  if (list.length > 1) {
+    if (low.value < 50) {
+      text += ` 다만 ${low.name}(${fmtScore(low.value)})${josa(low.name, '은', '는')} 표준 범위(40~60) 아래쪽에 머물러 다음 훈련 주기에서 우선 보완할 지점입니다.`;
+    } else if (low.value < 65) {
+      text += ` ${low.name}(${fmtScore(low.value)})${josa(low.name, '은', '는')} 아직 표준 범위 안쪽이라 조금 더 끌어올릴 여지가 있습니다.`;
+    } else {
+      text += ` 나머지 지표도 ${fmtScore(low.value)} 이상으로 고르게 유지되고 있습니다.`;
+    }
+  }
+  text += ` 영역 평균은 ${fmtScore(value)}로 ${domainLevelText(value)} 수준입니다.`;
+  return text;
+}
+
+// 같은 지표가 검사마다 다르게 나온 경우처럼, 점수만으로는 안 보이는 지점을 짚어준다.
+function findObservations(indicators) {
+  const notes = [];
+  indicators.forEach((it) => {
+    if (it.perTest.length < 2) return;
+    const values = it.perTest.map((p) => p.value);
+    const gap = Math.max(...values) - Math.min(...values);
+    if (gap < 10) return;
+    const detail = it.perTest.map((p) => `${p.testName}에서는 ${fmtScore(p.value)}`).join(', ');
+    const plain = it.name.replace(' (통합)', '');
+    notes.push({
+      domain: it.domain,
+      text: `${plain}${josa(plain, '이', '가')} ${detail}으로 차이가 있습니다. 검사 맥락에 따라 응답이 달라질 수 있으니 상담에서 함께 확인해 보세요.`,
+    });
+  });
+
+  const state = indicators.find((i) => i.rawName === '상태자신감');
+  const trait = indicators.find((i) => i.rawName === '자신감' || i.rawName === '능력입증');
+  if (state && trait && trait.value - state.value >= 5) {
+    notes.push({
+      domain: state.domain,
+      text: `경기 상황에 한정된 상태자신감(${fmtScore(state.value)})이 평소 ${trait.name}(${fmtScore(trait.value)})보다 낮게 나타납니다. 평소 갖춘 자신감을 실전에서 그대로 꺼내 쓰지 못하는 경향일 수 있어, 아래 훈련 제안과 연결해 보세요.`,
+    });
+  }
+  return notes.slice(0, 3);
+}
+
+// 낮게 나온 지표부터 훑어 관련 훈련 주제를 최대 3개까지 고른다.
+function buildSuggestions(sortedDesc) {
+  const weakest = [...sortedDesc].reverse().filter((i) => i.value < 70);
+  const picked = [];
+  TRAINING_THEMES.forEach((theme) => {
+    if (picked.length >= 3) return;
+    const evidence = weakest.filter((i) => theme.triggers.includes(i.rawName));
+    if (!evidence.length) return;
+    picked.push({ key: theme.key, title: theme.title, bullets: theme.bullets, evidence: evidence.slice(0, 3) });
+  });
+  // 근거가 낮은 지표부터 나오도록 정렬
+  return picked.sort((a, b) => a.evidence[0].value - b.evidence[0].value).slice(0, 3);
 }
 
 // 카톡·인스타 등 앱 안에 내장된 브라우저는 파일 다운로드가 막혀 있어, 링크 방식으로는 이미지가 저장되지 않는다.
@@ -1451,107 +1658,193 @@ function ConsultNudge({ concern }) {
 }
 
 // 레이더차트/척도카드 묶음 — 검사 직후 결과 화면과 개인 조회 상세 화면에서 공용으로 사용.
-// 여러 검사를 통합한 개인별 프로파일 — 종합지수, 영역별 점수, 강점/성장영역, 훈련 제안
-function IntegratedProfile({ profile, name }) {
-  const { composite, domains, strengths, growth, excluded, testCount, testNames } = profile;
-  const compColor = profileLevelColor(composite);
+// 0~100 축 위에 점 하나로 지표를 찍는다. 40~60 음영은 표준적인 응답 범위.
+function DotRow({ label, value }) {
+  const pct = Math.min(100, Math.max(0, value));
   return (
-    <>
-      <div className="p-4 rounded-xl border mb-3 text-center" style={{ background: C.card, borderColor: C.line }}>
-        <h2 className="text-base font-bold font-headline" style={{ color: C.ink }}>{name} 선수 통합 분석</h2>
-        <p className="text-xs mt-0.5" style={{ color: C.inkDim }}>검사 {testCount}종을 하나로 합친 프로파일</p>
-        <p className="text-[11px] mt-1" style={{ color: C.inkDim }}>{testNames.join(' · ')}</p>
+    <div className="flex items-center gap-2 py-[3px]">
+      <span className="text-[11px] leading-tight text-right flex-shrink-0" style={{ width: 92, color: C.inkDim }}>{label}</span>
+      <div className="relative flex-1" style={{ height: 14 }}>
+        <div className="absolute" style={{ left: 0, right: 0, top: 6, height: 2, background: C.line }} />
+        <div className="absolute" style={{ left: '40%', width: '20%', top: 4, height: 6, background: C.paperDim }} />
+        <div className="absolute" style={{ left: `${pct}%`, top: 2, width: 10, height: 10, borderRadius: 999, background: profileLevelColor(value), transform: 'translateX(-50%)' }} />
       </div>
+      <span className="text-[11px] font-mono font-bold flex-shrink-0 text-right" style={{ width: 32, color: C.ink }}>{fmtScore(value)}</span>
+    </div>
+  );
+}
 
-      <div className="rounded-2xl border p-4 shadow-sm text-center mb-3" style={{ background: C.card, borderColor: C.line }}>
-        <p className="text-xs font-bold font-mono uppercase tracking-wider mb-2" style={{ color: C.accent }}>종합 심리 적응 지수</p>
-        <div className="flex justify-center"><ScoreGauge norm={composite} color={compColor} size={104} /></div>
-        <p className="text-sm font-bold mt-2" style={{ color: compColor }}>{profileLevelText(composite)}</p>
-        <p className="text-[11px] leading-relaxed mt-2 px-2" style={{ color: C.inkDim }}>
-          모든 지표를 "높을수록 기능적"인 100점 기준으로 맞춘 뒤, 영역별 평균을 다시 평균한 값이에요.
-        </p>
-      </div>
-
-      {domains.length > 2 && (
-        <ScoreRadar data={domains.map((d) => ({ subject: d.label, value: Number(d.value.toFixed(1)) }))} />
-      )}
-
-      <div className="rounded-2xl border p-4 shadow-sm mb-3 text-left" style={{ background: C.card, borderColor: C.line }}>
-        <p className="text-xs font-bold mb-1" style={{ color: C.inkDim }}>영역별 점수</p>
-        <p className="text-[11px] leading-relaxed mb-3" style={{ color: C.inkDim }}>
-          불안·스트레스처럼 낮을수록 좋은 지표는 방향을 뒤집어 환산했어요. 그래서 아래 점수는 모두 높을수록 좋은 뜻이에요.
-        </p>
-        {domains.map((d) => (
-          <div key={d.key} className="mb-3.5 last:mb-0">
-            <div className="flex items-baseline justify-between mb-1.5">
-              <span className="text-sm font-bold" style={{ color: C.ink }}>{d.label}</span>
-              <span className="text-sm font-mono font-bold" style={{ color: profileLevelColor(d.value) }}>{d.value.toFixed(0)}</span>
-            </div>
-            <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: C.paperDim }}>
-              <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.max(0, d.value))}%`, background: profileLevelColor(d.value) }} />
-            </div>
-            <p className="text-[11px] mt-1.5 leading-relaxed" style={{ color: C.inkDim }}>
-              {d.indicators.map((i) => `${i.name} ${i.value.toFixed(0)}`).join(' · ')}
-            </p>
-          </div>
+function DotAxis() {
+  return (
+    <div className="flex items-center gap-2 mb-1.5">
+      <span className="flex-shrink-0" style={{ width: 92 }} />
+      <div className="relative flex-1" style={{ height: 12 }}>
+        {[0, 25, 50, 75, 100].map((t) => (
+          <span key={t} className="absolute text-[9px] font-mono" style={{ left: `${t}%`, transform: 'translateX(-50%)', color: C.inkDim }}>{t}</span>
         ))}
       </div>
+      <span className="flex-shrink-0" style={{ width: 32 }} />
+    </div>
+  );
+}
 
-      <div className="rounded-2xl border p-4 shadow-sm mb-3 text-left" style={{ background: C.card, borderColor: C.line }}>
-        <p className="text-xs font-bold mb-2" style={{ color: C.accent2 }}>이미 잘 활용하고 있는 강점</p>
-        {strengths.map((s) => (
-          <div key={s.name} className="flex items-baseline justify-between py-1.5 border-b last:border-b-0" style={{ borderColor: C.line }}>
-            <span className="text-sm font-bold" style={{ color: C.ink }}>
-              {s.name}
-              {s.sources.length > 1 && <span className="text-[10px] font-normal ml-1" style={{ color: C.inkDim }}>({s.sources.length}개 검사 평균)</span>}
-            </span>
-            <span className="text-sm font-mono font-bold" style={{ color: C.accent2 }}>{s.value.toFixed(0)}</span>
+function ObservationNote({ text }) {
+  return (
+    <div className="mt-2 pl-3 py-2 pr-2 text-[11px] leading-relaxed" style={{ borderLeft: `3px solid ${C.accent}`, background: 'var(--accent-tint)', color: C.inkDim }}>
+      <span className="font-bold" style={{ color: C.ink }}>관찰 포인트 — </span>{text}
+    </div>
+  );
+}
+
+// 여러 검사를 통합한 개인별 프로파일 — 종합지수, 영역별 점수, 강점/성장영역, 훈련 제안
+function IntegratedProfile({ profile, name, org, sport }) {
+  const { composite, domains, strengths, growth, excluded, testCount, testNames, asOf, summary, observations, suggestions, indicators } = profile;
+  const compColor = profileLevelColor(composite);
+  const asOfText = asOf ? new Date(asOf).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '';
+
+  return (
+    <div className="text-left">
+      <div className="pb-4 mb-4 border-b" style={{ borderColor: C.line }}>
+        <p className="text-[10px] font-mono font-bold tracking-widest uppercase mb-1.5" style={{ color: C.accent }}>KSPCI · 통합 분석 프로파일</p>
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="text-xl font-black font-headline" style={{ color: C.ink }}>{name} 선수</h2>
+          <div className="text-right flex-shrink-0">
+            <p className="text-[10px] font-bold" style={{ color: C.inkDim }}>종합 심리 적응 지수</p>
+            <p className="text-3xl font-black font-mono leading-none mt-0.5" style={{ color: compColor }}>{Math.round(composite)}</p>
+            <p className="text-[10px] font-bold mt-0.5" style={{ color: C.inkDim }}>{profileLevelText(composite)} 수준</p>
           </div>
-        ))}
-      </div>
-
-      {growth.length > 0 && (
-        <div className="rounded-2xl border p-4 shadow-sm mb-3 text-left" style={{ background: C.card, borderColor: C.line }}>
-          <p className="text-xs font-bold mb-2" style={{ color: C.accent }}>지금 키워볼 영역</p>
-          {growth.map((g) => (
-            <div key={g.name} className="py-2 border-b last:border-b-0" style={{ borderColor: C.line }}>
-              <div className="flex items-baseline justify-between">
-                <span className="text-sm font-bold" style={{ color: C.ink }}>
-                  {g.name}
-                  {g.sources.length > 1 && <span className="text-[10px] font-normal ml-1" style={{ color: C.inkDim }}>({g.sources.length}개 검사 평균)</span>}
-                </span>
-                <span className="text-sm font-mono font-bold" style={{ color: profileLevelColor(g.value) }}>{g.value.toFixed(0)}</span>
-              </div>
-              {g.tip && (
-                <p className="text-[11px] leading-relaxed px-3 py-2 rounded-lg mt-1.5" style={{ background: C.paperDim, color: C.inkDim }}>💡 {g.tip}</p>
-              )}
-            </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5 mt-2.5">
+          {[org, sport, `검사 ${testCount}종 통합${asOfText ? ` · ${asOfText} 기준` : ''}`].filter(Boolean).map((chip) => (
+            <span key={chip} className="text-[10px] font-bold px-2 py-1 rounded-full border" style={{ borderColor: C.line, color: C.inkDim, background: C.card }}>{chip}</span>
           ))}
         </div>
-      )}
+      </div>
+
+      <p className="text-xs leading-relaxed mb-3" style={{ color: C.ink }}>{summary}</p>
+
+      <div className="pl-3 py-1.5 mb-5 text-[11px] leading-relaxed" style={{ borderLeft: `3px solid ${C.line}`, color: C.inkDim }}>
+        이 프로파일은 검사 시점의 자기응답 경향을 요약한 참고 자료이며 확정된 능력이나 진단을 의미하지 않습니다. 상담 전 대화의 출발점으로 활용해 주세요.
+      </div>
+
+      <h3 className="text-base font-bold font-headline mb-1" style={{ color: C.ink }}>한눈에 보기</h3>
+      <p className="text-[11px] mb-3" style={{ color: C.inkDim }}>점이 오른쪽에 있을수록 기능적인 방향입니다 · 음영 구간(40–60)은 표준적인 응답 범위</p>
+      <DotAxis />
+
+      {domains.map((d) => (
+        <div key={d.key} className="mb-5">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-sm font-bold" style={{ color: C.ink }}>{d.label}</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-tint)', color: C.accent }}>
+              평균 {fmtScore(d.value)} · {d.level}
+            </span>
+          </div>
+          {d.indicators.map((i) => <DotRow key={i.name} label={i.name} value={i.value} />)}
+          <p className="text-[11px] leading-relaxed mt-2" style={{ color: C.inkDim }}>{d.summary}</p>
+          {observations
+            .filter((note) => note.domain === d.key)
+            .map((note) => <ObservationNote key={note.text} text={note.text} />)}
+        </div>
+      ))}
 
       {excluded.length > 0 && (
-        <div className="rounded-2xl border p-4 shadow-sm mb-3 text-left" style={{ background: C.card, borderColor: C.line }}>
-          <p className="text-xs font-bold mb-2" style={{ color: C.inkDim }}>종합 점수에서 제외한 검사 (참고용)</p>
+        <div className="rounded-2xl border p-4 shadow-sm mb-5" style={{ background: C.card, borderColor: C.line }}>
+          <h3 className="text-base font-bold font-headline mb-0.5" style={{ color: C.ink }}>기초 심리 특성 (참고용)</h3>
           {excluded.map((e) => (
             <div key={e.testDef.id}>
-              <p className="text-sm font-bold mb-1" style={{ color: C.ink }}>{e.testDef.name}</p>
-              <p className="text-[11px] leading-relaxed" style={{ color: C.inkDim }}>
-                {e.merged.map((s) => `${s.name} ${s.raw}/${s.max}`).join(' · ')}
-              </p>
-              <p className="text-[11px] leading-relaxed mt-1.5 px-3 py-2 rounded-lg" style={{ background: C.paperDim, color: C.inkDim }}>
-                정식 규준(T점수)을 확보하지 못한 검사라 원점수만 참고로 보여드리며, 종합 지수 계산에는 넣지 않았어요.
+              <p className="text-[11px] mb-3" style={{ color: C.inkDim }}>{e.testDef.name} · 환산점수(0~100) 기준, 원점수 병기</p>
+              <div className="grid grid-cols-3 gap-2">
+                {e.merged.map((s) => (
+                  <div key={s.key} className="p-2 rounded-xl text-center" style={{ background: C.paperDim }}>
+                    <p className="text-base font-black font-mono" style={{ color: C.ink }}>{fmtScore(s.norm)}</p>
+                    <p className="text-[10px] leading-tight mt-0.5" style={{ color: C.inkDim }}>{s.name}</p>
+                    <p className="text-[9px] font-mono mt-0.5" style={{ color: C.inkDim }}>{s.raw}/{s.max}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] leading-relaxed mt-3" style={{ color: C.inkDim }}>
+                정식 채점에는 연령·성별 규준표가 필요합니다. 규준표를 적용하지 못해 원점수만 참고용으로 제시한 값으로, 진단 목적으로 사용할 수 없습니다.
+                지속적인 어려움이 있다면 전문기관의 정식 평가를 권장합니다.
               </p>
             </div>
           ))}
         </div>
       )}
 
-      <p className="text-[11px] leading-relaxed text-center px-4" style={{ color: C.inkDim }}>
-        이 프로파일은 현재 시점의 자기응답 경향을 합쳐 본 참고 자료이며, 확정된 능력이나 진단을 의미하지 않아요.
+      <h3 className="text-base font-bold font-headline mb-0.5" style={{ color: C.ink }}>강점과 성장영역</h3>
+      <p className="text-[11px] mb-3" style={{ color: C.inkDim }}>{indicators.length}개 통합 지표 중 상·하위 값 기준</p>
+      <div className="grid grid-cols-2 gap-2 mb-5">
+        <div className="p-3 rounded-xl" style={{ background: 'var(--accent2-tint)' }}>
+          <p className="text-xs font-bold mb-2" style={{ color: C.accent2 }}>강점 TOP {strengths.length}</p>
+          {strengths.map((s) => (
+            <div key={s.name} className="flex items-baseline justify-between gap-1 py-1">
+              <span className="text-[11px] font-bold leading-tight" style={{ color: C.ink }}>{s.name}</span>
+              <span className="text-[11px] font-mono font-bold flex-shrink-0" style={{ color: C.ink }}>{fmtScore(s.value)}</span>
+            </div>
+          ))}
+        </div>
+        <div className="p-3 rounded-xl" style={{ background: 'var(--warn-tint)' }}>
+          <p className="text-xs font-bold mb-2" style={{ color: C.warn }}>성장영역 TOP {growth.length}</p>
+          {growth.map((g) => (
+            <div key={g.name} className="flex items-baseline justify-between gap-1 py-1">
+              <span className="text-[11px] font-bold leading-tight" style={{ color: C.ink }}>{g.name}</span>
+              <span className="text-[11px] font-mono font-bold flex-shrink-0" style={{ color: C.ink }}>{fmtScore(g.value)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {suggestions.length > 0 && (
+        <>
+          <h3 className="text-base font-bold font-headline mb-0.5" style={{ color: C.ink }}>맞춤형 훈련 제안</h3>
+          <p className="text-[11px] mb-3" style={{ color: C.inkDim }}>{testCount}개 검사를 교차 검토해 도출한 우선순위 {suggestions.length}가지</p>
+          {suggestions.map((s, idx) => (
+            <div key={s.key} className="rounded-2xl border p-4 shadow-sm mb-2 flex gap-3" style={{ background: C.card, borderColor: C.line }}>
+              <span className="text-sm font-black font-mono flex-shrink-0" style={{ color: C.accent }}>{String(idx + 1).padStart(2, '0')}</span>
+              <div className="flex-1">
+                <p className="text-sm font-bold" style={{ color: C.ink }}>{s.title}</p>
+                <p className="text-[10px] font-mono mt-0.5 mb-2" style={{ color: C.inkDim }}>
+                  근거 — {s.evidence.map((e) => `${e.name} ${fmtScore(e.value)}`).join(' · ')}
+                </p>
+                <ul className="space-y-1">
+                  {s.bullets.map((b) => (
+                    <li key={b} className="text-[11px] leading-relaxed pl-3 relative" style={{ color: C.inkDim }}>
+                      <span className="absolute left-0" style={{ color: C.accent }}>·</span>{b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      <details className="mt-4 mb-4">
+        <summary className="text-xs font-bold cursor-pointer py-2" style={{ color: C.inkDim }}>
+          세부 원점수 보기 ({testCount}개 검사 · {indicators.length}개 지표)
+        </summary>
+        <div className="mt-2 rounded-xl border p-3" style={{ background: C.card, borderColor: C.line }}>
+          {indicators.map((i) => (
+            <div key={i.name} className="py-1.5 border-b last:border-b-0" style={{ borderColor: C.line }}>
+              <div className="flex items-baseline justify-between">
+                <span className="text-[11px] font-bold" style={{ color: C.ink }}>{i.name}</span>
+                <span className="text-[11px] font-mono font-bold" style={{ color: C.ink }}>{fmtScore(i.value)}</span>
+              </div>
+              <p className="text-[10px] mt-0.5" style={{ color: C.inkDim }}>
+                {i.perTest.map((p) => `${p.testName} 원점수 ${p.raw}/${p.max} → ${fmtScore(p.value)}`).join(' · ')}
+              </p>
+            </div>
+          ))}
+        </div>
+      </details>
+
+      <p className="text-[10px] leading-relaxed" style={{ color: C.inkDim }}>
+        이 프로파일은 {testNames.join(' · ')} 응답을 통합·재정렬해 자동 생성한 초안이며, 전문가 상담을 대체하지 않습니다.
+        '낮을수록 좋음' 척도(불안·스트레스·부정적생각 등)는 100에서 뺀 값을 표시해 모든 지표를 동일한 방향(높을수록 기능적)으로 맞췄습니다.
+        같은 이름의 하위척도가 두 검사에 동시에 존재하는 경우 평균값으로 통합했습니다.
         영역 구분은 원척도의 공식 요인구조가 아니라 이 앱에서 묶은 잠정 분류입니다.
       </p>
-    </>
+    </div>
   );
 }
 
@@ -2243,7 +2536,12 @@ export default function App() {
                     <ChevronLeft size={14} /> 목록으로
                   </button>
                   <div ref={profileCaptureRef} style={{ background: C.paper }}>
-                    <IntegratedProfile profile={buildIntegratedProfile(lookupRows)} name={lookupName} />
+                    <IntegratedProfile
+                      profile={buildIntegratedProfile(lookupRows)}
+                      name={lookupName}
+                      org={lookupRows[lookupRows.length - 1]?.org}
+                      sport={lookupRows[lookupRows.length - 1]?.sport}
+                    />
                   </div>
                   <button
                     onClick={() => saveAsImage(profileCaptureRef, `${lookupName}_통합분석_프로파일.png`)}
