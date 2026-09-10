@@ -322,6 +322,8 @@ const CONNERS_TEST = {
   name: '한국판 Conners 성인 ADHD 평정척도',
   shortDesc: '부주의·과잉행동·충동성·자기개념 등 성인 ADHD 관련 특성',
   category: 'general',
+  // 정식 규준(T점수)을 확보하지 못한 검사라 통합 프로파일의 종합 점수에서는 빼고 참고자료로만 보여준다.
+  excludeFromProfile: true,
   items: CONNERS_ITEMS,
   likert: CONNERS_LIKERT,
   scaleMax: 3,
@@ -1021,6 +1023,45 @@ const TEST_CATEGORIES = [
   { key: 'sport', label: '스포츠심리검사' },
 ];
 
+/* ============ 통합 분석 프로파일 ============ */
+// 여러 검사를 본 선수의 결과를 한 장으로 합쳐 보기 위한 영역 구분.
+// ※ 원척도들의 공식 요인구조가 아니라 이 앱에서 묶은 잠정 분류다. 지도교수 검토 후 조정할 것.
+const PROFILE_DOMAINS = [
+  { key: 'pressure', label: '경쟁불안·압박 대처' },
+  { key: 'focus', label: '주의·수행 몰입' },
+  { key: 'confidence', label: '자신감·동기' },
+  { key: 'selfmgmt', label: '목표·훈련 자기관리' },
+  { key: 'imagery', label: '심상 활용' },
+  { key: 'support', label: '대인·환경 지지' },
+  { key: 'etc', label: '기타 지표' },
+];
+
+// 하위척도 이름 → 영역. 이름이 같은 척도(목표설정·심상·집중력)는 검사가 달라도 같은 지표로 본다.
+const SUBSCALE_DOMAIN = {
+  '인지적불안': 'pressure', '신체적불안': 'pressure', '감정조절': 'pressure', '긴장풀기': 'pressure',
+  '불안조절': 'pressure', '역경에 대한 대처': 'pressure', '압박감 해소': 'pressure', '시합 걱정의 자유': 'pressure',
+  '경기스트레스': 'pressure', '심판스트레스': 'pressure', '심리요인': 'pressure',
+
+  '집중력': 'focus', '주의산만': 'focus', '자동적수행': 'focus', '혼잣말': 'focus',
+  '부정적생각': 'focus', '부정적 자동사고': 'focus',
+
+  '자신감': 'confidence', '상태자신감': 'confidence', '자신감과 성취동기': 'confidence', '능력입증': 'confidence',
+  '신체정신적준비': 'confidence', '의지력': 'confidence', '운동능력': 'confidence', '운동관심': 'confidence',
+  '조화열정': 'confidence', '강박열정': 'confidence', '진로고민': 'confidence', '기능 및 경기내용 불만': 'confidence',
+
+  '목표설정': 'selfmgmt', '목표설정 / 심리적 준비': 'selfmgmt', '자기코칭 행동': 'selfmgmt',
+  '훈련관리': 'selfmgmt', '몸관리': 'selfmgmt', '정신관리': 'selfmgmt', '운동습관': 'selfmgmt',
+  '기술요인': 'selfmgmt', '신체요인': 'selfmgmt',
+
+  '심상': 'imagery', '기술 심상능력': 'imagery', '전략 심상능력': 'imagery', '목표 심상능력': 'imagery',
+  '정서 심상능력': 'imagery', '숙달 심상능력': 'imagery',
+
+  '팀조화': 'support', '대인관리': 'support', '사회적지지': 'support', '코치지도력': 'support',
+  '운동친구': 'support', '운동환경': 'support', '환경요인': 'support',
+  '지도력 불만': 'support', '개인시간 제약': 'support',
+  '공정성': 'support', '신속성': 'support', '일관성': 'support', '신뢰성': 'support',
+};
+
 function getTestById(id) {
   return TESTS.find((t) => t.id === id) || null;
 }
@@ -1064,6 +1105,84 @@ function groupByTestId(rows) {
     (g[r.testId] = g[r.testId] || []).push(r);
   });
   return g;
+}
+
+// 같은 검사를 여러 번 봤다면 가장 최근 회차만 통합 분석에 쓴다.
+function latestRowPerTest(rows) {
+  const byTest = {};
+  (rows || []).forEach((r) => {
+    const prev = byTest[r.testId];
+    if (!prev || new Date(r.timestamp) > new Date(prev.timestamp)) byTest[r.testId] = r;
+  });
+  return Object.values(byTest);
+}
+
+function profileLevelText(v) {
+  if (v >= 75) return '매우 양호';
+  if (v >= 60) return '양호';
+  if (v >= 45) return '보통';
+  return '우선 점검 권장';
+}
+
+function profileLevelColor(v) {
+  return v >= 60 ? C.accent2 : v >= 45 ? C.inkDim : C.warn;
+}
+
+// 여러 검사 결과를 하나의 프로파일로 합친다.
+// 1) 모든 지표를 "높을수록 기능적"인 0~100으로 방향 통일 (낮을수록 좋은 척도는 100에서 뺀다)
+// 2) 이름이 같은 지표는 검사가 달라도 평균으로 통합
+// 3) 영역별 평균 → 그 평균들의 평균으로 종합 지수 (지표 수가 많은 영역으로 쏠리지 않게)
+function buildIntegratedProfile(rows) {
+  const included = [];
+  const excluded = [];
+  latestRowPerTest(rows).forEach((r) => {
+    const testDef = getTestById(r.testId);
+    if (!testDef) return;
+    const entry = { testDef, merged: mergeStoredScores(testDef, safeParseScores(r.scores_json)), timestamp: r.timestamp };
+    (testDef.excludeFromProfile ? excluded : included).push(entry);
+  });
+
+  const byName = new Map();
+  included.forEach(({ testDef, merged }) => {
+    merged.forEach((s) => {
+      const cur = byName.get(s.name) || { name: s.name, values: [], sources: [], tip: s.tip };
+      cur.values.push(s.positive ? s.norm : 100 - s.norm);
+      cur.sources.push(testDef.name);
+      byName.set(s.name, cur);
+    });
+  });
+
+  const indicators = [...byName.values()].map((it) => ({
+    name: it.name,
+    value: it.values.reduce((a, b) => a + b, 0) / it.values.length,
+    sources: it.sources,
+    tip: it.tip,
+    domain: SUBSCALE_DOMAIN[it.name] || 'etc',
+  }));
+
+  const domains = PROFILE_DOMAINS.map((d) => {
+    const list = indicators.filter((i) => i.domain === d.key);
+    if (!list.length) return null;
+    return { ...d, indicators: list, value: list.reduce((a, b) => a + b.value, 0) / list.length };
+  }).filter(Boolean);
+
+  const composite = domains.length ? domains.reduce((a, d) => a + d.value, 0) / domains.length : 0;
+
+  // 지표 수가 적을 때 강점과 성장영역에 같은 항목이 겹치지 않도록 개수를 줄인다.
+  const sorted = [...indicators].sort((a, b) => b.value - a.value);
+  const strengthCount = Math.min(4, Math.max(1, Math.floor(indicators.length / 2)));
+  const growthCount = Math.min(3, indicators.length - strengthCount);
+
+  return {
+    testCount: included.length,
+    testNames: included.map((e) => e.testDef.name),
+    indicators,
+    domains,
+    composite,
+    strengths: sorted.slice(0, strengthCount),
+    growth: growthCount > 0 ? sorted.slice(-growthCount).reverse() : [],
+    excluded,
+  };
 }
 
 function validateAnswers(items, responses) {
@@ -1316,6 +1435,110 @@ function ConsultNudge({ concern }) {
 }
 
 // 레이더차트/척도카드 묶음 — 검사 직후 결과 화면과 개인 조회 상세 화면에서 공용으로 사용.
+// 여러 검사를 통합한 개인별 프로파일 — 종합지수, 영역별 점수, 강점/성장영역, 훈련 제안
+function IntegratedProfile({ profile, name }) {
+  const { composite, domains, strengths, growth, excluded, testCount, testNames } = profile;
+  const compColor = profileLevelColor(composite);
+  return (
+    <>
+      <div className="p-4 rounded-xl border mb-3 text-center" style={{ background: C.card, borderColor: C.line }}>
+        <h2 className="text-base font-bold font-headline" style={{ color: C.ink }}>{name} 선수 통합 분석</h2>
+        <p className="text-xs mt-0.5" style={{ color: C.inkDim }}>검사 {testCount}종을 하나로 합친 프로파일</p>
+        <p className="text-[11px] mt-1" style={{ color: C.inkDim }}>{testNames.join(' · ')}</p>
+      </div>
+
+      <div className="rounded-2xl border p-4 shadow-sm text-center mb-3" style={{ background: C.card, borderColor: C.line }}>
+        <p className="text-xs font-bold font-mono uppercase tracking-wider mb-2" style={{ color: C.accent }}>종합 심리 적응 지수</p>
+        <div className="flex justify-center"><ScoreGauge norm={composite} color={compColor} size={104} /></div>
+        <p className="text-sm font-bold mt-2" style={{ color: compColor }}>{profileLevelText(composite)}</p>
+        <p className="text-[11px] leading-relaxed mt-2 px-2" style={{ color: C.inkDim }}>
+          모든 지표를 "높을수록 기능적"인 100점 기준으로 맞춘 뒤, 영역별 평균을 다시 평균한 값이에요.
+        </p>
+      </div>
+
+      {domains.length > 2 && (
+        <ScoreRadar data={domains.map((d) => ({ subject: d.label, value: Number(d.value.toFixed(1)) }))} />
+      )}
+
+      <div className="rounded-2xl border p-4 shadow-sm mb-3 text-left" style={{ background: C.card, borderColor: C.line }}>
+        <p className="text-xs font-bold mb-1" style={{ color: C.inkDim }}>영역별 점수</p>
+        <p className="text-[11px] leading-relaxed mb-3" style={{ color: C.inkDim }}>
+          불안·스트레스처럼 낮을수록 좋은 지표는 방향을 뒤집어 환산했어요. 그래서 아래 점수는 모두 높을수록 좋은 뜻이에요.
+        </p>
+        {domains.map((d) => (
+          <div key={d.key} className="mb-3.5 last:mb-0">
+            <div className="flex items-baseline justify-between mb-1.5">
+              <span className="text-sm font-bold" style={{ color: C.ink }}>{d.label}</span>
+              <span className="text-sm font-mono font-bold" style={{ color: profileLevelColor(d.value) }}>{d.value.toFixed(0)}</span>
+            </div>
+            <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: C.paperDim }}>
+              <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.max(0, d.value))}%`, background: profileLevelColor(d.value) }} />
+            </div>
+            <p className="text-[11px] mt-1.5 leading-relaxed" style={{ color: C.inkDim }}>
+              {d.indicators.map((i) => `${i.name} ${i.value.toFixed(0)}`).join(' · ')}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-2xl border p-4 shadow-sm mb-3 text-left" style={{ background: C.card, borderColor: C.line }}>
+        <p className="text-xs font-bold mb-2" style={{ color: C.accent2 }}>이미 잘 활용하고 있는 강점</p>
+        {strengths.map((s) => (
+          <div key={s.name} className="flex items-baseline justify-between py-1.5 border-b last:border-b-0" style={{ borderColor: C.line }}>
+            <span className="text-sm font-bold" style={{ color: C.ink }}>
+              {s.name}
+              {s.sources.length > 1 && <span className="text-[10px] font-normal ml-1" style={{ color: C.inkDim }}>({s.sources.length}개 검사 평균)</span>}
+            </span>
+            <span className="text-sm font-mono font-bold" style={{ color: C.accent2 }}>{s.value.toFixed(0)}</span>
+          </div>
+        ))}
+      </div>
+
+      {growth.length > 0 && (
+        <div className="rounded-2xl border p-4 shadow-sm mb-3 text-left" style={{ background: C.card, borderColor: C.line }}>
+          <p className="text-xs font-bold mb-2" style={{ color: C.accent }}>지금 키워볼 영역</p>
+          {growth.map((g) => (
+            <div key={g.name} className="py-2 border-b last:border-b-0" style={{ borderColor: C.line }}>
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm font-bold" style={{ color: C.ink }}>
+                  {g.name}
+                  {g.sources.length > 1 && <span className="text-[10px] font-normal ml-1" style={{ color: C.inkDim }}>({g.sources.length}개 검사 평균)</span>}
+                </span>
+                <span className="text-sm font-mono font-bold" style={{ color: profileLevelColor(g.value) }}>{g.value.toFixed(0)}</span>
+              </div>
+              {g.tip && (
+                <p className="text-[11px] leading-relaxed px-3 py-2 rounded-lg mt-1.5" style={{ background: C.paperDim, color: C.inkDim }}>💡 {g.tip}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {excluded.length > 0 && (
+        <div className="rounded-2xl border p-4 shadow-sm mb-3 text-left" style={{ background: C.card, borderColor: C.line }}>
+          <p className="text-xs font-bold mb-2" style={{ color: C.inkDim }}>종합 점수에서 제외한 검사 (참고용)</p>
+          {excluded.map((e) => (
+            <div key={e.testDef.id}>
+              <p className="text-sm font-bold mb-1" style={{ color: C.ink }}>{e.testDef.name}</p>
+              <p className="text-[11px] leading-relaxed" style={{ color: C.inkDim }}>
+                {e.merged.map((s) => `${s.name} ${s.raw}/${s.max}`).join(' · ')}
+              </p>
+              <p className="text-[11px] leading-relaxed mt-1.5 px-3 py-2 rounded-lg" style={{ background: C.paperDim, color: C.inkDim }}>
+                정식 규준(T점수)을 확보하지 못한 검사라 원점수만 참고로 보여드리며, 종합 지수 계산에는 넣지 않았어요.
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className="text-[11px] leading-relaxed text-center px-4" style={{ color: C.inkDim }}>
+        이 프로파일은 현재 시점의 자기응답 경향을 합쳐 본 참고 자료이며, 확정된 능력이나 진단을 의미하지 않아요.
+        영역 구분은 원척도의 공식 요인구조가 아니라 이 앱에서 묶은 잠정 분류입니다.
+      </p>
+    </>
+  );
+}
+
 // 레이더차트는 축이 2개면 다각형이 아니라 직선으로 찌그러져 보이므로, 하위척도가 3개 이상일 때만 그린다.
 // (예: ATQ-N 1개, 경기스트레스·운동열정 검사지 2개는 레이더 없이 점수 카드만 표시)
 function ResultsBlock({ title, merged }) {
@@ -1402,6 +1625,7 @@ export default function App() {
   const [lookupError, setLookupError] = useState('');
   const [lookupRows, setLookupRows] = useState(null);
   const [lookupDetailIdx, setLookupDetailIdx] = useState(null);
+  const [showProfile, setShowProfile] = useState(false); // 여러 검사를 합친 통합 분석 화면 표시 여부
 
   // ===== 관리자(비밀번호로 전체 결과 조회) =====
   const [adminPassword, setAdminPassword] = useState('');
@@ -1413,6 +1637,7 @@ export default function App() {
   // ===== 결과를 이미지로 저장 =====
   const resultsCaptureRef = useRef(null);
   const lookupCaptureRef = useRef(null);
+  const profileCaptureRef = useRef(null);
   const adminCaptureRef = useRef(null);
   const [savingImage, setSavingImage] = useState(false);
 
@@ -1573,6 +1798,7 @@ export default function App() {
     setLookupLoading(true);
     setLookupError('');
     setLookupDetailIdx(null);
+    setShowProfile(false);
     try {
       const data = await callScript({ action: 'lookup', name: lookupName.trim(), phone4: lookupPhone4 });
       const rows = (data.rows || []).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -1855,7 +2081,7 @@ export default function App() {
               <h2 className="text-base font-bold mb-6 font-headline" style={{ color: C.ink }}>결과를 어떻게 확인할까요?</h2>
 
               <button
-                onClick={() => { setScreen('lookup'); setLookupRows(null); setLookupError(''); setLookupDetailIdx(null); }}
+                onClick={() => { setScreen('lookup'); setLookupRows(null); setLookupError(''); setLookupDetailIdx(null); setShowProfile(false); }}
                 className="w-full mb-3 p-5 rounded-2xl border shadow-sm text-left flex items-center gap-3"
                 style={{ background: C.card, borderColor: C.line }}
               >
@@ -1885,7 +2111,7 @@ export default function App() {
                 <ChevronLeft size={16} /> 돌아가기
               </button>
 
-              {lookupDetailIdx === null && (
+              {lookupDetailIdx === null && !showProfile && (
                 <div className="p-5 rounded-2xl border shadow-sm mb-4" style={{ background: C.card, borderColor: C.line }}>
                   <Field label="이름" value={lookupName} onChange={setLookupName} placeholder="검사 때 입력한 이름" />
                   <Field label="휴대폰 번호 뒷자리 4자리" type="tel" value={lookupPhone4} onChange={(v) => setLookupPhone4(sanitizePhone4(v))} placeholder="예: 1234" />
@@ -1896,9 +2122,25 @@ export default function App() {
                 </div>
               )}
 
-              {lookupRows && lookupRows.length > 0 && lookupDetailIdx === null && (
+              {lookupRows && lookupRows.length > 0 && lookupDetailIdx === null && !showProfile && (
                 <div className="text-left">
                   <p className="text-xs font-bold mb-2 px-1" style={{ color: C.inkDim }}>총 {lookupRows.length}회 검사 기록</p>
+
+                  {buildIntegratedProfile(lookupRows).testCount > 1 && (
+                    <button
+                      onClick={() => setShowProfile(true)}
+                      className="w-full mb-3 p-4 rounded-xl border shadow-sm flex items-center justify-between transition-transform active:scale-95"
+                      style={{ background: C.ink, borderColor: C.ink }}
+                    >
+                      <span className="text-left">
+                        <span className="block text-sm font-bold" style={{ color: '#FFF' }}>통합 분석 프로파일 보기</span>
+                        <span className="block text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                          여러 검사를 하나로 합쳐 강점·성장영역을 정리해드려요
+                        </span>
+                      </span>
+                      <ChevronRight size={16} style={{ color: 'rgba(255,255,255,0.7)', flexShrink: 0 }} />
+                    </button>
+                  )}
 
                   {Object.entries(groupByTestId(lookupRows)).filter(([, rows]) => rows.length > 1).map(([testId, rows]) => {
                     const testDef = getTestById(testId);
@@ -1925,6 +2167,25 @@ export default function App() {
                       <ChevronRight size={16} style={{ color: C.inkDim, flexShrink: 0 }} />
                     </button>
                   ))}
+                </div>
+              )}
+
+              {lookupRows && showProfile && (
+                <div>
+                  <button onClick={() => setShowProfile(false)} className="text-xs font-bold mb-4 flex items-center gap-1 mx-auto" style={{ color: C.inkDim }}>
+                    <ChevronLeft size={14} /> 목록으로
+                  </button>
+                  <div ref={profileCaptureRef} style={{ background: C.paper }}>
+                    <IntegratedProfile profile={buildIntegratedProfile(lookupRows)} name={lookupName} />
+                  </div>
+                  <button
+                    onClick={() => saveAsImage(profileCaptureRef, `${lookupName}_통합분석_프로파일.png`)}
+                    disabled={savingImage}
+                    className="w-full py-3.5 mt-4 rounded-xl border font-bold text-sm shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                    style={{ background: C.card, borderColor: C.line, color: C.ink }}
+                  >
+                    <Image size={16} /> {savingImage ? '저장 중...' : '프로파일 이미지로 저장'}
+                  </button>
                 </div>
               )}
 
