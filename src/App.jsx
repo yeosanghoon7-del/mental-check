@@ -1185,6 +1185,22 @@ function buildIntegratedProfile(rows) {
   };
 }
 
+// 카톡·인스타 등 앱 안에 내장된 브라우저는 파일 다운로드가 막혀 있어, 링크 방식으로는 이미지가 저장되지 않는다.
+function isInAppBrowser() {
+  const ua = navigator.userAgent || '';
+  return /KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|FB_IAB|Line\/|DaumApps|everytimeApp/i.test(ua);
+}
+
+// 아이패드 등에서는 캔버스가 한 변 4096px(또는 전체 약 1600만 픽셀)을 넘으면 빈 이미지가 만들어진다.
+// 결과지가 길수록 이 한계에 먼저 걸리므로, 요소 크기에 맞춰 배율을 안전 범위로 낮춘다.
+function safeCanvasScale(width, height) {
+  if (!width || !height) return 1;
+  const MAX_SIDE = 4000;
+  const MAX_AREA = 12000000;
+  const fit = Math.min(MAX_SIDE / width, MAX_SIDE / height, Math.sqrt(MAX_AREA / (width * height)));
+  return Math.min(2, Math.max(0.5, fit));
+}
+
 function validateAnswers(items, responses) {
   return items.filter((it) => !(it.no in responses)).map((it) => it.no);
 }
@@ -1638,6 +1654,7 @@ export default function App() {
   const resultsCaptureRef = useRef(null);
   const lookupCaptureRef = useRef(null);
   const profileCaptureRef = useRef(null);
+  const [savedImage, setSavedImage] = useState(null); // 인앱 브라우저용: 길게 눌러 저장할 이미지
   const adminCaptureRef = useRef(null);
   const [savingImage, setSavingImage] = useState(false);
 
@@ -1852,19 +1869,47 @@ export default function App() {
   async function saveAsImage(ref, filename) {
     if (!ref.current || savingImage) return;
     setSavingImage(true);
+    setErrorMsg('');
     try {
       // html2canvas는 var(--x) 같은 CSS 변수 참조를 옵션값으로는 못 읽어서, 실제 계산된 색으로 먼저 풀어준다.
       const resolvedPaper = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim() || '#F6F7F9';
-      const canvas = await html2canvas(ref.current, { backgroundColor: resolvedPaper, scale: 2, useCORS: true });
-      const url = canvas.toDataURL('image/png');
+      const el = ref.current;
+      const canvas = await html2canvas(el, {
+        backgroundColor: resolvedPaper,
+        scale: safeCanvasScale(el.offsetWidth, el.offsetHeight),
+        useCORS: true,
+      });
+      // 긴 결과지는 data URL이 수 MB에 달해 저사양 기기에서 실패하므로 Blob으로 다룬다.
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) throw new Error('canvas is empty');
+
+      // 1순위: 공유 시트 — 모바일에서 "이미지 저장"으로 바로 넘길 수 있고 인앱 브라우저에서도 대체로 동작한다.
+      const file = new File([blob], filename, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file] });
+          return;
+        } catch (e) {
+          if (e && e.name === 'AbortError') return; // 사용자가 공유창을 닫은 경우
+        }
+      }
+
+      const url = URL.createObjectURL(blob);
+      // 2순위: 다운로드가 막힌 인앱 브라우저에서는 이미지를 띄워 길게 눌러 저장하도록 안내한다.
+      if (isInAppBrowser()) {
+        setSavedImage({ url, filename });
+        return;
+      }
+      // 3순위: 일반 브라우저의 파일 다운로드
       const a = document.createElement('a');
       a.href = url;
       a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
     } catch {
-      setErrorMsg('이미지 저장에 실패했어요.');
+      setErrorMsg('이미지 저장에 실패했어요. 화면을 캡처해서 저장해주세요.');
     } finally {
       setSavingImage(false);
     }
@@ -1941,6 +1986,28 @@ export default function App() {
                 <li>2. 메뉴를 아래로 내려 <span style={{ fontWeight: 700, color: C.ink }}>"홈 화면에 추가"</span>를 눌러요.</li>
                 <li>3. 오른쪽 위 <span style={{ fontWeight: 700, color: C.ink }}>"추가"</span>를 누르면 완료돼요.</li>
               </ol>
+            </div>
+          </div>
+        )}
+
+        {savedImage && (
+          <div className="fixed inset-0 z-50 overflow-y-auto" style={{ background: 'rgba(0,0,0,0.85)' }}>
+            <div className="min-h-full flex flex-col items-center px-4 py-6">
+              <div className="w-full max-w-lg flex items-center justify-between mb-3">
+                <p className="text-sm font-bold" style={{ color: '#FFF' }}>이미지를 길게 눌러 저장하세요</p>
+                <button
+                  onClick={() => { URL.revokeObjectURL(savedImage.url); setSavedImage(null); }}
+                  className="p-1.5 rounded-lg"
+                  style={{ background: 'rgba(255,255,255,0.15)' }}
+                >
+                  <X size={18} style={{ color: '#FFF' }} />
+                </button>
+              </div>
+              <p className="w-full max-w-lg text-xs leading-relaxed mb-3" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                카카오톡·인스타그램 안에서 열면 파일 저장이 막혀 있어요. 아래 이미지를 길게 눌러 "이미지 저장"을 선택하시거나,
+                오른쪽 위 메뉴에서 "다른 브라우저로 열기"를 사용해주세요.
+              </p>
+              <img src={savedImage.url} alt={savedImage.filename} className="w-full max-w-lg rounded-xl" />
             </div>
           </div>
         )}
