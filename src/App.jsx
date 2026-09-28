@@ -1926,10 +1926,23 @@ export default function App() {
   }
   const draft = loadDraft();
 
-  const [screen, setScreen] = useState(RESTORABLE_SCREENS.includes(draft?.screen) ? draft.screen : 'intro');
+  // ===== 외부 사이트에서 특정 검사로 바로 연결하는 딥링크: ?test=<검사id> =====
+  function getDeepLinkTestId() {
+    try {
+      const id = new URLSearchParams(window.location.search).get('test');
+      return TESTS.some((t) => t.id === id && !t.comingSoon) ? id : null;
+    } catch {
+      return null;
+    }
+  }
+  const deepLinkTestId = getDeepLinkTestId();
+
+  const [screen, setScreen] = useState(
+    deepLinkTestId ? 'quiz' : (RESTORABLE_SCREENS.includes(draft?.screen) ? draft.screen : 'intro')
+  );
   const [athlete, setAthlete] = useState(draft?.athlete || { name: '', phone4: '', org: '', sport: '' });
-  const [selectedTestId, setSelectedTestId] = useState(draft?.selectedTestId || null);
-  const [responses, setResponses] = useState(draft?.responses || {});
+  const [selectedTestId, setSelectedTestId] = useState(deepLinkTestId || draft?.selectedTestId || null);
+  const [responses, setResponses] = useState(deepLinkTestId ? {} : (draft?.responses || {}));
   const [errorMsg, setErrorMsg] = useState('');
   const [savedEntry, setSavedEntry] = useState(draft?.savedEntry || null);
 
