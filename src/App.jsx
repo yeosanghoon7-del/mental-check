@@ -1998,16 +1998,31 @@ export default function App() {
   const adminTableBodyScrollRef = useRef(null);
   const adminScrollSyncing = useRef(false);
   const [adminTableScrollWidth, setAdminTableScrollWidth] = useState(560);
+  const [adminTableOverflows, setAdminTableOverflows] = useState(true); // 넓은 화면에서 가로로 안 넘치면 플로팅 스크롤바를 숨긴다
 
   // 표 실제 가로 폭이 바뀔 때마다(필터링 등) 위쪽 스크롤바 폭도 맞춰준다
   useEffect(() => {
     const el = adminTableBodyScrollRef.current;
     if (!el) return;
-    const update = () => setAdminTableScrollWidth(el.scrollWidth);
+    // 레이아웃이 다 잡힌 다음 프레임에 재야 화면 폭이 바뀐 직후에도 정확하다
+    let raf = 0;
+    const update = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        setAdminTableScrollWidth(el.scrollWidth);
+        setAdminTableOverflows(el.scrollWidth > el.clientWidth + 1);
+      });
+    };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
-    return () => ro.disconnect();
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    window.addEventListener('resize', update);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      window.removeEventListener('resize', update);
+    };
   });
   const [savingImage, setSavingImage] = useState(false);
 
@@ -2761,7 +2776,10 @@ export default function App() {
                 );
 
                 return (
-                  <div className="text-left">
+                  // 이 화면은 관리자 전용 데이터 조회 도구라, 나머지 화면과 달리 넓은 데스크톱 화면에서는
+                  // 앱 전체를 감싸는 좁은 폭(max-w-lg)을 벗어나 옆으로 넓게 써서 표가 스크롤 없이 한눈에 보이게 한다.
+                  <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)' }}>
+                  <div className="max-w-5xl mx-auto px-4 text-left">
                     <div className="flex items-center justify-between mb-3">
                       <h2 className="text-base font-bold font-headline" style={{ color: C.ink }}>전체 검사 결과</h2>
                       <span className="text-xs font-mono font-bold px-2 py-0.5 rounded" style={{ background: C.paperDim, color: C.inkDim }}>
@@ -2871,7 +2889,7 @@ export default function App() {
                           </tbody>
                         </table>
                         </div>
-                        <div className="sticky -mx-4 px-4" style={{ bottom: 40, zIndex: 30 }}>
+                        <div className="sticky -mx-4 px-4" style={{ bottom: 40, zIndex: 30, display: adminTableOverflows ? 'block' : 'none' }}>
                           <div
                             ref={adminTableFloatScrollRef}
                             className="overflow-x-auto rounded-full border shadow-md"
@@ -2900,6 +2918,7 @@ export default function App() {
                     )}
                     {adminRows.length === 0 && <p className="text-xs" style={{ color: C.inkDim }}>아직 저장된 응답이 없어요.</p>}
                     {adminRows.length > 0 && filtered.length === 0 && <p className="text-xs" style={{ color: C.inkDim }}>조건에 맞는 결과가 없어요.</p>}
+                  </div>
                   </div>
                 );
               })()}
