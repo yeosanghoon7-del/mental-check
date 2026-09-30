@@ -1962,7 +1962,17 @@ export default function App() {
   const [adminRows, setAdminRows] = useState(null);
   const [adminDetailIdx, setAdminDetailIdx] = useState(null);
   const [adminFilterTestId, setAdminFilterTestId] = useState('all'); // 검사별 필터 (엑셀 필터처럼)
+  const [adminFilterOrg, setAdminFilterOrg] = useState('all');
+  const [adminFilterSport, setAdminFilterSport] = useState('all');
   const [adminSearch, setAdminSearch] = useState(''); // 이름 검색
+  const [adminSort, setAdminSort] = useState({ key: 'timestamp', dir: 'desc' }); // 열 클릭 정렬
+  const [adminVisibleCount, setAdminVisibleCount] = useState(50); // 페이지네이션("더 보기")
+  const [adminProfileTarget, setAdminProfileTarget] = useState(null); // { name, phone4 } — 선수별 통합 프로파일 보기
+
+  // 필터/검색/정렬이 바뀌면 페이지네이션을 처음으로 되돌린다
+  useEffect(() => {
+    setAdminVisibleCount(50);
+  }, [adminFilterTestId, adminFilterOrg, adminFilterSport, adminSearch, adminSort]);
 
   // ===== 결과를 이미지로 저장 =====
   const resultsCaptureRef = useRef(null);
@@ -2091,13 +2101,16 @@ export default function App() {
       return;
     }
     setErrorMsg('');
+    // 앞뒤 공백만 정리한다 — 관리자 화면에서 소속/종목으로 필터링할 때 "계명대학교 " 같은
+    // 눈에 안 보이는 공백 차이로 다른 값 취급되는 걸 막기 위함(값 자체를 바꾸지는 않음).
+    const trimmedAthlete = { ...athlete, name: athlete.name.trim(), org: athlete.org.trim(), sport: athlete.sport.trim() };
     const scores = scoreSubscales(currentTest.subscales, responses, currentTest.scaleMax, currentTest.minVal ?? 1);
     const entry = {
       id: makeId(),
       timestamp: new Date().toISOString(),
       testId: currentTest.id,
       testName: currentTest.name,
-      athlete: { ...athlete },
+      athlete: trimmedAthlete,
       scores,
       responses: { ...responses },
     };
@@ -2156,7 +2169,10 @@ export default function App() {
       setAdminRows(rows);
       setAdminDetailIdx(null);
       setAdminFilterTestId('all');
+      setAdminFilterOrg('all');
+      setAdminFilterSport('all');
       setAdminSearch('');
+      setAdminProfileTarget(null);
     } catch {
       setAdminError('비밀번호가 틀렸거나 오류가 발생했어요.');
       setAdminRows(null);
@@ -2479,7 +2495,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setScreen('admin'); setAdminRows(null); setAdminError(''); setAdminDetailIdx(null); }}
+                onClick={() => { setScreen('admin'); setAdminRows(null); setAdminError(''); setAdminDetailIdx(null); setAdminProfileTarget(null); }}
                 className="w-full p-5 rounded-2xl border shadow-sm text-left flex items-center gap-3"
                 style={{ background: C.card, borderColor: C.line }}
               >
@@ -2627,15 +2643,44 @@ export default function App() {
                 </div>
               )}
 
-              {adminRows && adminDetailIdx === null && (() => {
-                const testCounts = {};
-                adminRows.forEach((r) => { testCounts[r.testId] = (testCounts[r.testId] || 0) + 1; });
+              {adminRows && adminDetailIdx === null && !adminProfileTarget && (() => {
+                const countBy = (getKey) => {
+                  const m = {};
+                  adminRows.forEach((r) => { const k = getKey(r); if (k) m[k] = (m[k] || 0) + 1; });
+                  return m;
+                };
+                const testCounts = countBy((r) => r.testId);
+                const orgCounts = countBy((r) => r.org.trim());
+                const sportCounts = countBy((r) => r.sport.trim());
                 const testOptions = TESTS.filter((t) => testCounts[t.id]).map((t) => ({ id: t.id, name: t.name, count: testCounts[t.id] }));
+                const orgOptions = Object.keys(orgCounts).sort((a, b) => a.localeCompare(b, 'ko'));
+                const sportOptions = Object.keys(sportCounts).sort((a, b) => a.localeCompare(b, 'ko'));
+
+                // 같은 선수(이름+휴대폰뒷자리)가 여러 번 응시했는지 — 목록에 배지로 표시
+                const personCounts = countBy((r) => `${r.name}__${r.phone4}`);
+
                 const searchTerm = adminSearch.trim();
                 const filtered = adminRows
                   .map((r, idx) => ({ r, idx }))
-                  .filter(({ r }) => (adminFilterTestId === 'all' || r.testId === adminFilterTestId) && (!searchTerm || r.name.includes(searchTerm)));
-                const isFiltered = adminFilterTestId !== 'all' || !!searchTerm;
+                  .filter(({ r }) =>
+                    (adminFilterTestId === 'all' || r.testId === adminFilterTestId) &&
+                    (adminFilterOrg === 'all' || r.org.trim() === adminFilterOrg) &&
+                    (adminFilterSport === 'all' || r.sport.trim() === adminFilterSport) &&
+                    (!searchTerm || r.name.includes(searchTerm))
+                  );
+                const isFiltered = adminFilterTestId !== 'all' || adminFilterOrg !== 'all' || adminFilterSport !== 'all' || !!searchTerm;
+
+                const dir = adminSort.dir === 'asc' ? 1 : -1;
+                const sorted = [...filtered].sort((a, b) => {
+                  if (adminSort.key === 'name') return a.r.name.localeCompare(b.r.name, 'ko') * dir;
+                  return (new Date(a.r.timestamp) - new Date(b.r.timestamp)) * dir;
+                });
+
+                const visible = sorted.slice(0, adminVisibleCount);
+                const toggleSort = (key) => setAdminSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
+                const SortArrow = ({ active, dir: d }) => (
+                  <span style={{ opacity: active ? 1 : 0.25, marginLeft: 2 }}>{d === 'asc' ? '▲' : '▼'}</span>
+                );
 
                 return (
                   <div className="text-left">
@@ -2646,62 +2691,142 @@ export default function App() {
                       </span>
                     </div>
 
-                    <div className="flex gap-2 mb-3">
-                      <div className="relative flex-1">
-                        <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: C.inkDim }} />
-                        <input
-                          value={adminSearch}
-                          onChange={(e) => setAdminSearch(e.target.value)}
-                          placeholder="이름 검색"
-                          className="w-full pl-8 pr-3 py-2.5 rounded-xl border text-xs font-bold"
-                          style={{ borderColor: C.line, background: C.card, color: C.ink }}
-                        />
-                      </div>
+                    <div className="relative mb-2">
+                      <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: C.inkDim }} />
+                      <input
+                        value={adminSearch}
+                        onChange={(e) => setAdminSearch(e.target.value)}
+                        placeholder="이름 검색"
+                        className="w-full pl-8 pr-3 py-2.5 rounded-xl border text-xs font-bold"
+                        style={{ borderColor: C.line, background: C.card, color: C.ink }}
+                      />
+                    </div>
+                    <div className="flex gap-2 mb-3 overflow-x-auto -mx-4 px-4" style={{ scrollbarWidth: 'none' }}>
                       <select
                         value={adminFilterTestId}
                         onChange={(e) => setAdminFilterTestId(e.target.value)}
-                        className="py-2.5 px-3 rounded-xl border text-xs font-bold"
-                        style={{ borderColor: C.line, background: C.card, color: C.ink, maxWidth: 180 }}
+                        className="py-2.5 px-3 rounded-xl border text-xs font-bold flex-shrink-0"
+                        style={{ borderColor: C.line, background: C.card, color: C.ink, maxWidth: 170 }}
                       >
                         <option value="all">전체 검사 ({adminRows.length})</option>
                         {testOptions.map((t) => (
                           <option key={t.id} value={t.id}>{t.name} ({t.count})</option>
                         ))}
                       </select>
+                      <select
+                        value={adminFilterOrg}
+                        onChange={(e) => setAdminFilterOrg(e.target.value)}
+                        className="py-2.5 px-3 rounded-xl border text-xs font-bold flex-shrink-0"
+                        style={{ borderColor: C.line, background: C.card, color: C.ink, maxWidth: 150 }}
+                      >
+                        <option value="all">전체 소속</option>
+                        {orgOptions.map((o) => (
+                          <option key={o} value={o}>{o || '(미입력)'} ({orgCounts[o]})</option>
+                        ))}
+                      </select>
+                      <select
+                        value={adminFilterSport}
+                        onChange={(e) => setAdminFilterSport(e.target.value)}
+                        className="py-2.5 px-3 rounded-xl border text-xs font-bold flex-shrink-0"
+                        style={{ borderColor: C.line, background: C.card, color: C.ink, maxWidth: 150 }}
+                      >
+                        <option value="all">전체 종목</option>
+                        {sportOptions.map((s) => (
+                          <option key={s} value={s}>{s || '(미입력)'} ({sportCounts[s]})</option>
+                        ))}
+                      </select>
                     </div>
 
-                    <button onClick={() => exportAdminCSV(filtered.map(({ r }) => r))} disabled={!filtered.length} className="w-full mb-4 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 shadow-sm" style={{ background: C.ink, color: '#FFF' }}>
+                    <button onClick={() => exportAdminCSV(sorted.map(({ r }) => r))} disabled={!sorted.length} className="w-full mb-4 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 shadow-sm" style={{ background: C.ink, color: '#FFF' }}>
                       <Download size={15} /> {isFiltered ? `CSV 다운로드 (필터링된 ${filtered.length}건)` : 'CSV 다운로드'}
                     </button>
 
-                    {filtered.length > 0 && (
+                    {visible.length > 0 && (
                       <div className="overflow-x-auto -mx-4 px-4">
                         <table className="text-xs font-mono border-collapse w-full" style={{ minWidth: 560 }}>
                           <thead>
                             <tr className="border-b" style={{ borderColor: C.line }}>
-                              {['시간', '검사명', '이름', '휴대폰뒷자리', '소속', '종목', ''].map((h) => (
+                              <th className="text-left py-2.5 pr-3 font-bold whitespace-nowrap cursor-pointer select-none" style={{ color: C.inkDim }} onClick={() => toggleSort('timestamp')}>
+                                시간<SortArrow active={adminSort.key === 'timestamp'} dir={adminSort.key === 'timestamp' ? adminSort.dir : 'desc'} />
+                              </th>
+                              <th className="text-left py-2.5 pr-3 font-bold whitespace-nowrap" style={{ color: C.inkDim }}>검사명</th>
+                              <th className="text-left py-2.5 pr-3 font-bold whitespace-nowrap cursor-pointer select-none" style={{ color: C.inkDim }} onClick={() => toggleSort('name')}>
+                                이름<SortArrow active={adminSort.key === 'name'} dir={adminSort.key === 'name' ? adminSort.dir : 'asc'} />
+                              </th>
+                              {['휴대폰뒷자리', '소속', '종목', ''].map((h) => (
                                 <th key={h} className="text-left py-2.5 pr-3 font-bold whitespace-nowrap" style={{ color: C.inkDim }}>{h}</th>
                               ))}
                             </tr>
                           </thead>
                           <tbody>
-                            {filtered.map(({ r, idx }) => (
-                              <tr key={idx} className="border-b cursor-pointer" style={{ borderColor: C.line }} onClick={() => setAdminDetailIdx(idx)}>
-                                <td className="py-2.5 pr-3 whitespace-nowrap font-medium" style={{ color: C.ink }}>{new Date(r.timestamp).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
-                                <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.testName}</td>
-                                <td className="py-2.5 pr-3 whitespace-nowrap font-bold" style={{ color: C.ink }}>{r.name}</td>
-                                <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.phone4}</td>
-                                <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.org}</td>
-                                <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.sport}</td>
-                                <td className="py-2.5 pr-3"><ChevronRight size={14} style={{ color: C.inkDim }} /></td>
-                              </tr>
-                            ))}
+                            {visible.map(({ r, idx }) => {
+                              const visitCount = personCounts[`${r.name}__${r.phone4}`];
+                              return (
+                                <tr key={idx} className="border-b cursor-pointer" style={{ borderColor: C.line }} onClick={() => setAdminDetailIdx(idx)}>
+                                  <td className="py-2.5 pr-3 whitespace-nowrap font-medium" style={{ color: C.ink }}>{new Date(r.timestamp).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+                                  <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.testName}</td>
+                                  <td className="py-2.5 pr-3 whitespace-nowrap">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setAdminProfileTarget({ name: r.name, phone4: r.phone4 }); }}
+                                      className="font-bold underline decoration-dotted"
+                                      style={{ color: C.ink }}
+                                      title="이 선수의 통합 분석 프로파일 보기"
+                                    >
+                                      {r.name}
+                                    </button>
+                                    {visitCount > 1 && (
+                                      <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-tint)', color: C.accent }}>{visitCount}회</span>
+                                    )}
+                                  </td>
+                                  <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.phone4}</td>
+                                  <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.org}</td>
+                                  <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.sport}</td>
+                                  <td className="py-2.5 pr-3"><ChevronRight size={14} style={{ color: C.inkDim }} /></td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
                     )}
+                    {sorted.length > visible.length && (
+                      <button
+                        onClick={() => setAdminVisibleCount((c) => c + 50)}
+                        className="w-full mt-3 py-2.5 rounded-xl border text-xs font-bold"
+                        style={{ borderColor: C.line, background: C.card, color: C.inkDim }}
+                      >
+                        더 보기 ({visible.length} / {sorted.length})
+                      </button>
+                    )}
                     {adminRows.length === 0 && <p className="text-xs" style={{ color: C.inkDim }}>아직 저장된 응답이 없어요.</p>}
                     {adminRows.length > 0 && filtered.length === 0 && <p className="text-xs" style={{ color: C.inkDim }}>조건에 맞는 결과가 없어요.</p>}
+                  </div>
+                );
+              })()}
+
+              {adminRows && adminProfileTarget && (() => {
+                const rows = adminRows.filter((r) => r.name === adminProfileTarget.name && r.phone4 === adminProfileTarget.phone4);
+                return (
+                  <div>
+                    <button onClick={() => setAdminProfileTarget(null)} className="text-xs font-bold mb-4 flex items-center gap-1 mx-auto" style={{ color: C.inkDim }}>
+                      <ChevronLeft size={14} /> 목록으로
+                    </button>
+                    <div ref={adminCaptureRef} style={{ background: C.paper }}>
+                      <IntegratedProfile
+                        profile={buildIntegratedProfile(rows)}
+                        name={adminProfileTarget.name}
+                        org={rows[rows.length - 1]?.org}
+                        sport={rows[rows.length - 1]?.sport}
+                      />
+                    </div>
+                    <button
+                      onClick={() => saveAsImage(adminCaptureRef, `${adminProfileTarget.name}_통합분석_프로파일.png`)}
+                      disabled={savingImage}
+                      className="w-full py-3.5 mt-4 rounded-xl border font-bold text-sm shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                      style={{ background: C.card, borderColor: C.line, color: C.ink }}
+                    >
+                      <Image size={16} /> {savingImage ? '저장 중...' : '프로파일 이미지로 저장'}
+                    </button>
                   </div>
                 );
               })()}
