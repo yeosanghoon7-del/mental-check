@@ -2891,14 +2891,7 @@ export default function App() {
                     {sorted.length > visible.length && (
                       <button
                         ref={adminLoadMoreRef}
-                        onClick={() => {
-                          setAdminVisibleCount((c) => c + 50);
-                          // 표가 아래로 길어질 뿐이라 스크롤 위치에 따라 클릭해도 안 보일 수 있어,
-                          // 새로 늘어난 자리로 부드럽게 스크롤해 "눌렸다"는 걸 바로 보여준다.
-                          requestAnimationFrame(() => {
-                            adminLoadMoreRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                          });
-                        }}
+                        onClick={() => setAdminVisibleCount((c) => c + 50)}
                         className="w-full mt-3 py-2.5 rounded-xl border text-xs font-bold transition-transform active:scale-95"
                         style={{ borderColor: C.line, background: C.card, color: C.inkDim }}
                       >
