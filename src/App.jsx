@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
-import { ChevronRight, ChevronLeft, Check, Download, AlertCircle, RotateCcw, Smartphone, X, Lock, Search, User, Clock, Image, Instagram } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, Download, AlertCircle, RotateCcw, Smartphone, X, Lock, Search, User, Clock, Image, Instagram, Trash2 } from 'lucide-react';
 
 /* ============ Design tokens ============ */
 // index.html의 :root 에 정의된 CSS 변수를 그대로 참조한다.
@@ -1972,6 +1972,9 @@ export default function App() {
   const [adminRows, setAdminRows] = useState(null);
   const [adminDetailIdx, setAdminDetailIdx] = useState(null);
   const [adminFilterTestId, setAdminFilterTestId] = useState('all'); // 검사별 필터 (엑셀 필터처럼)
+  const [adminDeleteConfirm, setAdminDeleteConfirm] = useState(false); // 삭제 확인 팝업
+  const [adminDeleting, setAdminDeleting] = useState(false);
+  const [adminDeleteError, setAdminDeleteError] = useState('');
   const [adminFilterOrg, setAdminFilterOrg] = useState('all');
   const [adminFilterSport, setAdminFilterSport] = useState('all');
   const [adminSearch, setAdminSearch] = useState(''); // 이름 검색
@@ -2227,6 +2230,24 @@ export default function App() {
     downloadCSV(`sports_psych_data_${Date.now()}.csv`, toCSV(rows));
   }
 
+  // 되돌릴 수 없는 삭제라, 실제 실행은 확인 팝업에서 "삭제" 버튼을 눌러야만 일어난다.
+  async function deleteAdminEntry() {
+    if (adminDetailIdx === null || !adminRows) return;
+    const target = adminRows[adminDetailIdx];
+    setAdminDeleting(true);
+    setAdminDeleteError('');
+    try {
+      await callScript({ action: 'delete', password: adminPassword, id: target.id, testName: target.testName });
+      setAdminRows((rows) => rows.filter((_, i) => i !== adminDetailIdx));
+      setAdminDetailIdx(null);
+      setAdminDeleteConfirm(false);
+    } catch (e) {
+      setAdminDeleteError(e.message || '삭제 중 오류가 발생했어요.');
+    } finally {
+      setAdminDeleting(false);
+    }
+  }
+
   async function saveAsImage(ref, filename) {
     if (!ref.current || savingImage) return;
     setSavingImage(true);
@@ -2394,6 +2415,37 @@ export default function App() {
                   style={{ background: C.ink, color: '#FFF' }}
                 >
                   확인
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {adminDeleteConfirm && adminDetailIdx !== null && adminRows && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => !adminDeleting && setAdminDeleteConfirm(false)}>
+            <div className="w-full max-w-xs rounded-2xl p-5 text-center shadow-lg" style={{ background: C.card }} onClick={(e) => e.stopPropagation()}>
+              <p className="text-sm font-bold mb-1" style={{ color: C.ink }}>이 결과를 삭제할까요?</p>
+              <p className="text-xs leading-relaxed mb-4" style={{ color: C.inkDim }}>
+                {adminRows[adminDetailIdx].name} 선수 · {adminRows[adminDetailIdx].testName}
+                <br />삭제하면 되돌릴 수 없어요.
+              </p>
+              {adminDeleteError && <p className="text-xs font-bold mb-3" style={{ color: C.warn }}>{adminDeleteError}</p>}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setAdminDeleteConfirm(false)}
+                  disabled={adminDeleting}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold border disabled:opacity-50"
+                  style={{ borderColor: C.line, color: C.inkDim, background: C.card }}
+                >
+                  취소
+                </button>
+                <button
+                  onClick={deleteAdminEntry}
+                  disabled={adminDeleting}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold disabled:opacity-50"
+                  style={{ background: C.warn, color: '#FFF' }}
+                >
+                  {adminDeleting ? '삭제 중...' : '삭제'}
                 </button>
               </div>
             </div>
@@ -2897,6 +2949,13 @@ export default function App() {
                     style={{ background: C.card, borderColor: C.line, color: C.ink }}
                   >
                     <Image size={16} /> {savingImage ? '저장 중...' : '결과 이미지로 저장'}
+                  </button>
+                  <button
+                    onClick={() => { setAdminDeleteError(''); setAdminDeleteConfirm(true); }}
+                    className="w-full py-3.5 mt-2 rounded-xl border font-bold text-sm flex items-center justify-center gap-2 transition-transform active:scale-95"
+                    style={{ background: C.card, borderColor: 'var(--warn-soft-border)', color: C.warn }}
+                  >
+                    <Trash2 size={16} /> 이 결과 삭제하기
                   </button>
                 </div>
               )}

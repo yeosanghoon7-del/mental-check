@@ -104,12 +104,42 @@ function handleAdmin_(body) {
   return jsonOut_({ ok: true, rows: readAllRows_() });
 }
 
+// id로 특정 한 건을 찾아 그 행을 시트에서 통째로 지운다. 되돌릴 수 없으니 비밀번호로만 접근을 막고,
+// 실제 확인 절차는 프론트엔드(관리자 화면)의 삭제 확인 팝업이 담당한다.
+function handleDelete_(body) {
+  const pw = PropertiesService.getScriptProperties().getProperty(ADMIN_PASSWORD_PROP);
+  if (!pw || body.password !== pw) return jsonOut_({ ok: false, error: 'unauthorized' });
+  const id = String(body.id || '');
+  if (!id) return jsonOut_({ ok: false, error: 'missing id' });
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  // testId/testName 힌트가 있으면 해당 시트부터 먼저 찾아본다(대부분 여기서 바로 찾음).
+  const hintSheet = body.testName ? ss.getSheetByName(safeSheetName_(body.testName)) : null;
+  const sheets = hintSheet ? [hintSheet].concat(ss.getSheets().filter((s) => s !== hintSheet)) : ss.getSheets();
+
+  for (const sheet of sheets) {
+    const values = sheet.getDataRange().getValues();
+    if (values.length < 2) continue;
+    const idCol = values[0].indexOf('id');
+    if (idCol === -1) continue;
+    for (let r = 1; r < values.length; r++) {
+      if (String(values[r][idCol]) === id) {
+        sheet.deleteRow(r + 1);
+        SpreadsheetApp.flush();
+        return jsonOut_({ ok: true });
+      }
+    }
+  }
+  return jsonOut_({ ok: false, error: 'not found' });
+}
+
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
     if (body.action === 'submit') return handleSubmit_(body);
     if (body.action === 'lookup') return handleLookup_(body);
     if (body.action === 'admin') return handleAdmin_(body);
+    if (body.action === 'delete') return handleDelete_(body);
     return jsonOut_({ ok: false, error: 'unknown action' });
   } catch (err) {
     return jsonOut_({ ok: false, error: String(err) });
