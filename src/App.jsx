@@ -2656,9 +2656,6 @@ export default function App() {
                 const orgOptions = Object.keys(orgCounts).sort((a, b) => a.localeCompare(b, 'ko'));
                 const sportOptions = Object.keys(sportCounts).sort((a, b) => a.localeCompare(b, 'ko'));
 
-                // 같은 선수(이름+휴대폰뒷자리)가 여러 번 응시했는지 — 목록에 배지로 표시
-                const personCounts = countBy((r) => `${r.name}__${r.phone4}`);
-
                 const searchTerm = adminSearch.trim();
                 const filtered = adminRows
                   .map((r, idx) => ({ r, idx }))
@@ -2742,49 +2739,43 @@ export default function App() {
                     </button>
 
                     {visible.length > 0 && (
-                      <div className="overflow-x-auto -mx-4 px-4">
+                      <div className="-mx-4 px-4 overflow-auto border rounded-xl" style={{ maxHeight: '65vh', borderColor: C.line }}>
                         <table className="text-xs font-mono border-collapse w-full" style={{ minWidth: 560 }}>
                           <thead>
                             <tr className="border-b" style={{ borderColor: C.line }}>
-                              <th className="text-left py-2.5 pr-3 font-bold whitespace-nowrap cursor-pointer select-none" style={{ color: C.inkDim }} onClick={() => toggleSort('timestamp')}>
+                              <th className="sticky top-0 text-left py-2.5 pr-3 font-bold whitespace-nowrap cursor-pointer select-none" style={{ color: C.inkDim, background: C.paper }} onClick={() => toggleSort('timestamp')}>
                                 시간<SortArrow active={adminSort.key === 'timestamp'} dir={adminSort.key === 'timestamp' ? adminSort.dir : 'desc'} />
                               </th>
-                              <th className="text-left py-2.5 pr-3 font-bold whitespace-nowrap" style={{ color: C.inkDim }}>검사명</th>
-                              <th className="text-left py-2.5 pr-3 font-bold whitespace-nowrap cursor-pointer select-none" style={{ color: C.inkDim }} onClick={() => toggleSort('name')}>
+                              <th className="sticky top-0 text-left py-2.5 pr-3 font-bold whitespace-nowrap" style={{ color: C.inkDim, background: C.paper }}>검사명</th>
+                              <th className="sticky top-0 text-left py-2.5 pr-3 font-bold whitespace-nowrap cursor-pointer select-none" style={{ color: C.inkDim, background: C.paper }} onClick={() => toggleSort('name')}>
                                 이름<SortArrow active={adminSort.key === 'name'} dir={adminSort.key === 'name' ? adminSort.dir : 'asc'} />
                               </th>
                               {['휴대폰뒷자리', '소속', '종목', ''].map((h) => (
-                                <th key={h} className="text-left py-2.5 pr-3 font-bold whitespace-nowrap" style={{ color: C.inkDim }}>{h}</th>
+                                <th key={h} className="sticky top-0 text-left py-2.5 pr-3 font-bold whitespace-nowrap" style={{ color: C.inkDim, background: C.paper }}>{h}</th>
                               ))}
                             </tr>
                           </thead>
                           <tbody>
-                            {visible.map(({ r, idx }) => {
-                              const visitCount = personCounts[`${r.name}__${r.phone4}`];
-                              return (
-                                <tr key={idx} className="border-b cursor-pointer" style={{ borderColor: C.line }} onClick={() => setAdminDetailIdx(idx)}>
-                                  <td className="py-2.5 pr-3 whitespace-nowrap font-medium" style={{ color: C.ink }}>{new Date(r.timestamp).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
-                                  <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.testName}</td>
-                                  <td className="py-2.5 pr-3 whitespace-nowrap">
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); setAdminProfileTarget({ name: r.name, phone4: r.phone4 }); }}
-                                      className="font-bold underline decoration-dotted"
-                                      style={{ color: C.ink }}
-                                      title="이 선수의 통합 분석 프로파일 보기"
-                                    >
-                                      {r.name}
-                                    </button>
-                                    {visitCount > 1 && (
-                                      <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-tint)', color: C.accent }}>{visitCount}회</span>
-                                    )}
-                                  </td>
-                                  <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.phone4}</td>
-                                  <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.org}</td>
-                                  <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.sport}</td>
-                                  <td className="py-2.5 pr-3"><ChevronRight size={14} style={{ color: C.inkDim }} /></td>
-                                </tr>
-                              );
-                            })}
+                            {visible.map(({ r, idx }) => (
+                              <tr key={idx} className="border-b cursor-pointer" style={{ borderColor: C.line }} onClick={() => setAdminDetailIdx(idx)}>
+                                <td className="py-2.5 pr-3 whitespace-nowrap font-medium" style={{ color: C.ink }}>{new Date(r.timestamp).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+                                <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.testName}</td>
+                                <td className="py-2.5 pr-3 whitespace-nowrap">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setAdminProfileTarget({ name: r.name, phone4: r.phone4 }); }}
+                                    className="font-bold underline decoration-dotted"
+                                    style={{ color: C.ink }}
+                                    title="이 선수의 통합 분석 프로파일 보기"
+                                  >
+                                    {r.name}
+                                  </button>
+                                </td>
+                                <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.phone4}</td>
+                                <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.org}</td>
+                                <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.sport}</td>
+                                <td className="py-2.5 pr-3"><ChevronRight size={14} style={{ color: C.inkDim }} /></td>
+                              </tr>
+                            ))}
                           </tbody>
                         </table>
                       </div>
