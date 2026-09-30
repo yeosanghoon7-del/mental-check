@@ -2820,7 +2820,7 @@ export default function App() {
                     </button>
 
                     {visible.length > 0 && (
-                      <>
+                      <div className="relative">
                         <div
                           ref={adminTableBodyScrollRef}
                           className="no-scrollbar -mx-4 px-4 overflow-x-auto border rounded-xl"
@@ -2886,7 +2886,7 @@ export default function App() {
                             <div style={{ width: adminTableScrollWidth, height: 1 }} />
                           </div>
                         </div>
-                      </>
+                      </div>
                     )}
                     {sorted.length > visible.length && (
                       <button
