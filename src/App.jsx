@@ -1993,7 +1993,7 @@ export default function App() {
   const profileCaptureRef = useRef(null);
   const [savedImage, setSavedImage] = useState(null); // 인앱 브라우저용: 길게 눌러 저장할 이미지
   const adminCaptureRef = useRef(null);
-  const adminTableTopScrollRef = useRef(null); // 표 위에 붙는 가로 스크롤바 — 표 자체가 길어져도 스크롤 위치가 화면 밖으로 밀리지 않게
+  const adminTableFloatScrollRef = useRef(null); // 화면 하단에 떠서 따라다니는 가로 스크롤바 — 표를 스크롤해도 항상 손 닿는 위치에 있게
   const adminTableBodyScrollRef = useRef(null);
   const adminScrollSyncing = useRef(false);
   const [adminTableScrollWidth, setAdminTableScrollWidth] = useState(560);
@@ -2821,26 +2821,13 @@ export default function App() {
                     {visible.length > 0 && (
                       <>
                         <div
-                          ref={adminTableTopScrollRef}
-                          className="-mx-4 px-4 overflow-x-auto"
-                          style={{ height: 14 }}
-                          onScroll={(e) => {
-                            if (adminScrollSyncing.current) return;
-                            adminScrollSyncing.current = true;
-                            if (adminTableBodyScrollRef.current) adminTableBodyScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
-                            adminScrollSyncing.current = false;
-                          }}
-                        >
-                          <div style={{ width: adminTableScrollWidth, height: 1 }} />
-                        </div>
-                        <div
                           ref={adminTableBodyScrollRef}
-                          className="-mx-4 px-4 overflow-auto border rounded-xl"
+                          className="no-scrollbar -mx-4 px-4 overflow-auto border rounded-xl"
                           style={{ maxHeight: '65vh', borderColor: C.line }}
                           onScroll={(e) => {
                             if (adminScrollSyncing.current) return;
                             adminScrollSyncing.current = true;
-                            if (adminTableTopScrollRef.current) adminTableTopScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                            if (adminTableFloatScrollRef.current) adminTableFloatScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
                             adminScrollSyncing.current = false;
                           }}
                         >
@@ -2882,6 +2869,21 @@ export default function App() {
                             ))}
                           </tbody>
                         </table>
+                        </div>
+                        <div className="sticky -mx-4 px-4" style={{ bottom: 40, zIndex: 30 }}>
+                          <div
+                            ref={adminTableFloatScrollRef}
+                            className="overflow-x-auto rounded-full border shadow-md"
+                            style={{ height: 18, background: C.card, borderColor: C.line }}
+                            onScroll={(e) => {
+                              if (adminScrollSyncing.current) return;
+                              adminScrollSyncing.current = true;
+                              if (adminTableBodyScrollRef.current) adminTableBodyScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                              adminScrollSyncing.current = false;
+                            }}
+                          >
+                            <div style={{ width: adminTableScrollWidth, height: 1 }} />
+                          </div>
                         </div>
                       </>
                     )}

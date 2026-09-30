@@ -69,6 +69,14 @@
       input, textarea, select {
         --tw-ring-color: rgba(47, 98, 240, 0.35);
       }
+      /* 관리자 표는 화면에 떠있는 스크롤바 하나만 보이게 하고, 표 자체의 기본 스크롤바는 숨긴다 */
+      .no-scrollbar {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
     </style>
   </head>
   <script>
