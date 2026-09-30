@@ -1981,6 +1981,7 @@ export default function App() {
   const [adminSort, setAdminSort] = useState({ key: 'timestamp', dir: 'desc' }); // 열 클릭 정렬
   const [adminVisibleCount, setAdminVisibleCount] = useState(50); // 페이지네이션("더 보기")
   const [adminProfileTarget, setAdminProfileTarget] = useState(null); // { name, phone4 } — 선수별 통합 프로파일 보기
+  const adminLoadMoreRef = useRef(null);
 
   // 필터/검색/정렬이 바뀌면 페이지네이션을 처음으로 되돌린다
   useEffect(() => {
@@ -2822,8 +2823,8 @@ export default function App() {
                       <>
                         <div
                           ref={adminTableBodyScrollRef}
-                          className="no-scrollbar -mx-4 px-4 overflow-auto border rounded-xl"
-                          style={{ maxHeight: '65vh', borderColor: C.line }}
+                          className="no-scrollbar -mx-4 px-4 overflow-x-auto border rounded-xl"
+                          style={{ borderColor: C.line }}
                           onScroll={(e) => {
                             if (adminScrollSyncing.current) return;
                             adminScrollSyncing.current = true;
@@ -2834,15 +2835,15 @@ export default function App() {
                         <table className="text-xs font-mono border-collapse w-full" style={{ minWidth: 560 }}>
                           <thead>
                             <tr className="border-b" style={{ borderColor: C.line }}>
-                              <th className="sticky top-0 text-left py-2.5 pr-3 font-bold whitespace-nowrap cursor-pointer select-none" style={{ color: C.inkDim, background: C.paper }} onClick={() => toggleSort('timestamp')}>
+                              <th className="text-left py-2.5 pr-3 font-bold whitespace-nowrap cursor-pointer select-none" style={{ color: C.inkDim, background: C.paper }} onClick={() => toggleSort('timestamp')}>
                                 시간<SortArrow active={adminSort.key === 'timestamp'} dir={adminSort.key === 'timestamp' ? adminSort.dir : 'desc'} />
                               </th>
-                              <th className="sticky top-0 text-left py-2.5 pr-3 font-bold whitespace-nowrap" style={{ color: C.inkDim, background: C.paper }}>검사명</th>
-                              <th className="sticky top-0 text-left py-2.5 pr-3 font-bold whitespace-nowrap cursor-pointer select-none" style={{ color: C.inkDim, background: C.paper }} onClick={() => toggleSort('name')}>
+                              <th className="text-left py-2.5 pr-3 font-bold whitespace-nowrap" style={{ color: C.inkDim, background: C.paper }}>검사명</th>
+                              <th className="text-left py-2.5 pr-3 font-bold whitespace-nowrap cursor-pointer select-none" style={{ color: C.inkDim, background: C.paper }} onClick={() => toggleSort('name')}>
                                 이름<SortArrow active={adminSort.key === 'name'} dir={adminSort.key === 'name' ? adminSort.dir : 'asc'} />
                               </th>
                               {['휴대폰뒷자리', '소속', '종목', ''].map((h) => (
-                                <th key={h} className="sticky top-0 text-left py-2.5 pr-3 font-bold whitespace-nowrap" style={{ color: C.inkDim, background: C.paper }}>{h}</th>
+                                <th key={h} className="text-left py-2.5 pr-3 font-bold whitespace-nowrap" style={{ color: C.inkDim, background: C.paper }}>{h}</th>
                               ))}
                             </tr>
                           </thead>
@@ -2889,8 +2890,16 @@ export default function App() {
                     )}
                     {sorted.length > visible.length && (
                       <button
-                        onClick={() => setAdminVisibleCount((c) => c + 50)}
-                        className="w-full mt-3 py-2.5 rounded-xl border text-xs font-bold"
+                        ref={adminLoadMoreRef}
+                        onClick={() => {
+                          setAdminVisibleCount((c) => c + 50);
+                          // 표가 아래로 길어질 뿐이라 스크롤 위치에 따라 클릭해도 안 보일 수 있어,
+                          // 새로 늘어난 자리로 부드럽게 스크롤해 "눌렸다"는 걸 바로 보여준다.
+                          requestAnimationFrame(() => {
+                            adminLoadMoreRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          });
+                        }}
+                        className="w-full mt-3 py-2.5 rounded-xl border text-xs font-bold transition-transform active:scale-95"
                         style={{ borderColor: C.line, background: C.card, color: C.inkDim }}
                       >
                         더 보기 ({visible.length} / {sorted.length})
