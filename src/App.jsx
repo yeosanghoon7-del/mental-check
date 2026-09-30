@@ -1521,7 +1521,7 @@ function LikertItem({ no, text, options, value, onChange, idPrefix }) {
   const answered = value !== undefined && value !== null;
   return (
     <div id={`${idPrefix}-item-${no}`} className="py-5 border-b text-left" style={{ borderColor: C.line }}>
-      <div className="mb-3 text-left">
+      <div className="mb-3 text-justify">
         <span className="font-mono text-xs font-black block mb-1" style={{ color: answered ? C.inkDim : C.accent }}>
           {String(no).padStart(2, '0')}
         </span>
@@ -1671,8 +1671,8 @@ function DotRow({ label, value }) {
     <div className="flex items-center gap-2 py-[3px]">
       <span className="text-[11px] leading-tight text-right flex-shrink-0" style={{ width: 92, color: C.inkDim }}>{label}</span>
       <div className="relative flex-1" style={{ height: 14 }}>
-        <div className="absolute" style={{ left: 0, right: 0, top: 6, height: 2, background: C.line }} />
-        <div className="absolute" style={{ left: '40%', width: '20%', top: 4, height: 6, background: C.paperDim }} />
+        <div className="absolute" style={{ left: 0, right: 0, top: 6, height: 2, background: 'rgba(91, 101, 119, 0.35)' }} />
+        <div className="absolute" style={{ left: '40%', width: '20%', top: 4, height: 6, background: 'rgba(91, 101, 119, 0.14)' }} />
         <div className="absolute" style={{ left: `${pct}%`, top: 2, width: 10, height: 10, borderRadius: 999, background: profileLevelColor(value), transform: 'translateX(-50%)' }} />
       </div>
       <span className="text-[11px] font-mono font-bold flex-shrink-0 text-right" style={{ width: 32, color: C.ink }}>{fmtScore(value)}</span>
@@ -1709,7 +1709,7 @@ function IntegratedProfile({ profile, name, org, sport }) {
   const asOfText = asOf ? new Date(asOf).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '';
 
   return (
-    <div className="text-left">
+    <div className="text-justify">
       <div className="pb-4 mb-4 border-b" style={{ borderColor: C.line }}>
         <p className="text-[10px] font-mono font-bold tracking-widest uppercase mb-1.5" style={{ color: C.accent }}>KSPCI · 통합 분석 프로파일</p>
         <div className="flex items-start justify-between gap-3">
