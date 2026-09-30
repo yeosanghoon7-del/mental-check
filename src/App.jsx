@@ -289,28 +289,32 @@ const CONNERS_LIKERT = [
   { v: 3, label: '매우자주' },
 ];
 
+// 지도교수가 예전부터 봐온 결과표(2022)는 하위척도 원점수를 "문항 평균"(0~3점)으로 표기해,
+// "평균 2점 이상이면 높다" 식으로 해석해왔다. 우리 앱은 원래 "문항 합산"(0~15점 등)으로 보여줘서
+// 같은 응답이라도 원점수가 다르게 보였던 것 — displayMean으로 표시만 문항 평균으로 맞춘다.
+// (환산점수는 합산이든 평균이든 비율이 같아 영향 없음)
 const CONNERS_SUBSCALES = [
-  { key: 'inattention', name: '부주의 및 기억문제', items: [3, 5, 17, 18, 21], reverse: [], positive: false,
+  { key: 'inattention', name: '부주의 및 기억문제', items: [3, 5, 17, 18, 21], reverse: [], positive: false, displayMean: true,
     def: '체계적이지 못함, 마감시간 없이는 일을 못 끝냄 등 부주의·기억 관련 어려움의 빈도 (원점수 참고용, 임상 진단 아님).',
     high: '부주의·기억 관련 어려움을 상대적으로 자주 보고했어요.',
     low: '부주의·기억 관련 어려움을 상대적으로 적게 보고했어요.',
     tip: '이 결과만으로 ADHD를 진단할 수 없어요. 어려움이 지속된다면 정신건강의학과 등 전문기관에서 정식 평가를 받아보시길 권해드려요.' },
-  { key: 'hyperactivity', name: '과잉행동 및 초조함', items: [4, 6, 10, 11, 23], reverse: [], positive: false,
+  { key: 'hyperactivity', name: '과잉행동 및 초조함', items: [4, 6, 10, 11, 23], reverse: [], positive: false, displayMean: true,
     def: '가만히 있지 못함, 쉽게 지루해짐 등 과잉행동·초조함의 빈도 (원점수 참고용, 임상 진단 아님).',
     high: '과잉행동·초조함 관련 특성을 상대적으로 자주 보고했어요.',
     low: '과잉행동·초조함 관련 특성을 상대적으로 적게 보고했어요.',
     tip: '이 결과만으로 ADHD를 진단할 수 없어요. 어려움이 지속된다면 정신건강의학과 등 전문기관에서 정식 평가를 받아보시길 권해드려요.' },
-  { key: 'impulsivity', name: '충동성 및 정서적 불안정', items: [1, 7, 8, 13, 20], reverse: [], positive: false,
+  { key: 'impulsivity', name: '충동성 및 정서적 불안정', items: [1, 7, 8, 13, 20], reverse: [], positive: false, displayMean: true,
     def: '참을성 부족, 감정 기복, 쉽게 화를 냄 등 충동성·정서적 불안정의 빈도 (원점수 참고용, 임상 진단 아님).',
     high: '충동성·정서적 불안정 관련 특성을 상대적으로 자주 보고했어요.',
     low: '충동성·정서적 불안정 관련 특성을 상대적으로 적게 보고했어요.',
     tip: '이 결과만으로 ADHD를 진단할 수 없어요. 어려움이 지속된다면 정신건강의학과 등 전문기관에서 정식 평가를 받아보시길 권해드려요.' },
-  { key: 'selfConcept', name: '자기개념 문제', items: [9, 15, 16, 25, 26], reverse: [], positive: false,
+  { key: 'selfConcept', name: '자기개념 문제', items: [9, 15, 16, 25, 26], reverse: [], positive: false, displayMean: true,
     def: '자기 능력에 대한 확신 부족, 자기책망 등 자기개념 관련 어려움의 빈도 (원점수 참고용, 임상 진단 아님).',
     high: '자기개념 관련 어려움을 상대적으로 자주 보고했어요.',
     low: '자기개념 관련 어려움을 상대적으로 적게 보고했어요.',
     tip: '이 결과만으로 ADHD를 진단할 수 없어요. 어려움이 지속된다면 정신건강의학과 등 전문기관에서 정식 평가를 받아보시길 권해드려요.' },
-  { key: 'adhdIndex', name: 'ADHD 지수', items: [2, 7, 8, 9, 11, 12, 14, 17, 19, 22, 24, 26], reverse: [], positive: false,
+  { key: 'adhdIndex', name: 'ADHD 지수', items: [2, 7, 8, 9, 11, 12, 14, 17, 19, 22, 24, 26], reverse: [], positive: false, displayMean: true,
     def: '위 4개 하위영역을 가로지르는 종합 지표 문항들의 빈도 (원점수 참고용, 임상 진단 아님).',
     high: 'ADHD 지수에 해당하는 문항들에 상대적으로 자주 그렇다고 응답했어요.',
     low: 'ADHD 지수에 해당하는 문항들에 상대적으로 적게 그렇다고 응답했어요.',
@@ -1594,13 +1598,17 @@ function ScoreGauge({ norm, color, size = 66 }) {
   );
 }
 
-function ScoreRow({ name, raw, max, norm, def, high, low, tip, positive }) {
+function ScoreRow({ name, raw, max, norm, def, high, low, tip, positive, displayMean, itemCount }) {
   const level = norm >= 60 ? 'high' : norm <= 40 ? 'low' : 'mid';
   const levelText = level === 'high' ? high : level === 'low' ? low : '두드러지지 않은 보통 수준의 반응을 보여요.';
   const isMid = level === 'mid';
   const isGood = !isMid && (level === 'high') === positive;
   const levelColor = isMid ? C.inkDim : isGood ? C.accent2 : C.warn;
   const levelTint = isMid ? 'var(--inkDim-tint)' : isGood ? 'var(--accent2-tint)' : 'var(--warn-tint)';
+  // 문항 평균으로 표기하는 척도(예: CAARS)는 "원점수 1.6/3.0점"처럼 문항당 평균을 보여준다.
+  const useMean = displayMean && itemCount > 0;
+  const shownRaw = useMean ? (raw / itemCount).toFixed(1) : raw;
+  const shownMax = useMean ? (max / itemCount).toFixed(1) : max;
   return (
     <div className="py-4 border-b last:border-b-0 text-center">
       <div className="flex items-center gap-3 justify-center mb-2">
@@ -1616,7 +1624,9 @@ function ScoreRow({ name, raw, max, norm, def, high, low, tip, positive }) {
         </div>
       </div>
       {def && <p className="text-xs font-medium leading-relaxed mb-2 px-2 text-justify" style={{ color: C.inkDim }}>{def}</p>}
-      <p className="text-xs font-mono font-bold mb-2" style={{ color: C.inkDim }}>원점수 {raw} / {max}점 · 환산 {norm.toFixed(1)}점</p>
+      <p className="text-xs font-mono font-bold mb-2" style={{ color: C.inkDim }}>
+        {useMean ? '문항평균' : '원점수'} {shownRaw} / {shownMax}점 · 환산 {norm.toFixed(1)}점
+      </p>
       {levelText && (
         <p className="text-xs font-bold leading-relaxed mb-2 px-2 text-justify" style={{ color: levelColor }}>{levelText}</p>
       )}
@@ -1868,7 +1878,7 @@ function ResultsBlock({ title, merged }) {
       )}
       <div className="rounded-2xl border p-2 mt-3 shadow-sm" style={{ background: C.card, borderColor: C.line }}>
         {merged.map((s) => (
-          <ScoreRow key={s.key} name={s.name} raw={s.raw} max={s.max} norm={s.norm} def={s.def} high={s.high} low={s.low} tip={s.tip} positive={s.positive} />
+          <ScoreRow key={s.key} name={s.name} raw={s.raw} max={s.max} norm={s.norm} def={s.def} high={s.high} low={s.low} tip={s.tip} positive={s.positive} displayMean={s.displayMean} itemCount={s.items?.length} />
         ))}
       </div>
     </>
@@ -1980,6 +1990,21 @@ export default function App() {
   const profileCaptureRef = useRef(null);
   const [savedImage, setSavedImage] = useState(null); // 인앱 브라우저용: 길게 눌러 저장할 이미지
   const adminCaptureRef = useRef(null);
+  const adminTableTopScrollRef = useRef(null); // 표 위에 붙는 가로 스크롤바 — 표 자체가 길어져도 스크롤 위치가 화면 밖으로 밀리지 않게
+  const adminTableBodyScrollRef = useRef(null);
+  const adminScrollSyncing = useRef(false);
+  const [adminTableScrollWidth, setAdminTableScrollWidth] = useState(560);
+
+  // 표 실제 가로 폭이 바뀔 때마다(필터링 등) 위쪽 스크롤바 폭도 맞춰준다
+  useEffect(() => {
+    const el = adminTableBodyScrollRef.current;
+    if (!el) return;
+    const update = () => setAdminTableScrollWidth(el.scrollWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
   const [savingImage, setSavingImage] = useState(false);
 
   // ===== 앱 설치(PWA) 관련 상태 =====
@@ -2193,7 +2218,10 @@ export default function App() {
         소속: r.org,
         종목: r.sport,
       };
-      safeParseScores(r.scores_json).forEach((s) => { row[s.name] = s.raw; });
+      // CAARS처럼 문항 평균으로 표기하는 척도는 CSV에도 화면과 같은 값(문항 평균)을 넣는다.
+      mergeStoredScores(getTestById(r.testId), safeParseScores(r.scores_json)).forEach((s) => {
+        row[s.name] = s.displayMean && s.items?.length ? Number((s.raw / s.items.length).toFixed(1)) : s.raw;
+      });
       return row;
     });
     downloadCSV(`sports_psych_data_${Date.now()}.csv`, toCSV(rows));
@@ -2739,7 +2767,31 @@ export default function App() {
                     </button>
 
                     {visible.length > 0 && (
-                      <div className="-mx-4 px-4 overflow-auto border rounded-xl" style={{ maxHeight: '65vh', borderColor: C.line }}>
+                      <>
+                        <div
+                          ref={adminTableTopScrollRef}
+                          className="-mx-4 px-4 overflow-x-auto"
+                          style={{ height: 14 }}
+                          onScroll={(e) => {
+                            if (adminScrollSyncing.current) return;
+                            adminScrollSyncing.current = true;
+                            if (adminTableBodyScrollRef.current) adminTableBodyScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                            adminScrollSyncing.current = false;
+                          }}
+                        >
+                          <div style={{ width: adminTableScrollWidth, height: 1 }} />
+                        </div>
+                        <div
+                          ref={adminTableBodyScrollRef}
+                          className="-mx-4 px-4 overflow-auto border rounded-xl"
+                          style={{ maxHeight: '65vh', borderColor: C.line }}
+                          onScroll={(e) => {
+                            if (adminScrollSyncing.current) return;
+                            adminScrollSyncing.current = true;
+                            if (adminTableTopScrollRef.current) adminTableTopScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                            adminScrollSyncing.current = false;
+                          }}
+                        >
                         <table className="text-xs font-mono border-collapse w-full" style={{ minWidth: 560 }}>
                           <thead>
                             <tr className="border-b" style={{ borderColor: C.line }}>
@@ -2778,7 +2830,8 @@ export default function App() {
                             ))}
                           </tbody>
                         </table>
-                      </div>
+                        </div>
+                      </>
                     )}
                     {sorted.length > visible.length && (
                       <button
