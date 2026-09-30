@@ -1615,13 +1615,13 @@ function ScoreRow({ name, raw, max, norm, def, high, low, tip, positive }) {
           </span>
         </div>
       </div>
-      {def && <p className="text-xs font-medium leading-relaxed mb-2 px-2" style={{ color: C.inkDim }}>{def}</p>}
+      {def && <p className="text-xs font-medium leading-relaxed mb-2 px-2 text-justify" style={{ color: C.inkDim }}>{def}</p>}
       <p className="text-xs font-mono font-bold mb-2" style={{ color: C.inkDim }}>원점수 {raw} / {max}점 · 환산 {norm.toFixed(1)}점</p>
       {levelText && (
-        <p className="text-xs font-bold leading-relaxed mb-2 px-2" style={{ color: levelColor }}>{levelText}</p>
+        <p className="text-xs font-bold leading-relaxed mb-2 px-2 text-justify" style={{ color: levelColor }}>{levelText}</p>
       )}
       {tip && (
-        <p className="text-[11px] leading-relaxed px-3 py-2 rounded-lg mx-2" style={{ background: C.paperDim, color: C.inkDim }}>💡 {tip}</p>
+        <p className="text-[11px] leading-relaxed px-3 py-2 rounded-lg mx-2 text-justify" style={{ background: C.paperDim, color: C.inkDim }}>💡 {tip}</p>
       )}
     </div>
   );
@@ -1860,7 +1860,7 @@ function ResultsBlock({ title, merged }) {
   return (
     <>
       <p className="text-xs font-bold font-mono uppercase tracking-wider text-center" style={{ color: C.accent }}>{title}</p>
-      <p className="text-[11px] leading-relaxed text-center mt-1 mb-1 px-4" style={{ color: C.inkDim }}>
+      <p className="text-[11px] leading-relaxed text-justify mt-1 mb-1 px-4" style={{ color: C.inkDim }}>
         이 결과는 현재 시점의 자기응답 경향을 보여주는 참고 자료이며, 확정된 능력이나 진단을 의미하지 않아요.
       </p>
       {merged.length > 2 && (
@@ -2256,7 +2256,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen w-full flex justify-center items-start font-sans antialiased" style={{ background: C.paper, color: C.ink }}>
-      <div className="w-full max-w-lg mx-auto relative min-h-screen flex flex-col px-4 text-center">
+      <div className="w-full max-w-lg mx-auto relative min-h-screen flex flex-col px-4 text-justify">
 
         <div className="sticky top-0 z-10 pt-3 pb-2 border-b mb-2" style={{ background: C.paper, borderColor: C.line }}>
           <div className="flex items-center justify-between">
