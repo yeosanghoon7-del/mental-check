@@ -1961,6 +1961,8 @@ export default function App() {
   const [adminError, setAdminError] = useState('');
   const [adminRows, setAdminRows] = useState(null);
   const [adminDetailIdx, setAdminDetailIdx] = useState(null);
+  const [adminFilterTestId, setAdminFilterTestId] = useState('all'); // 검사별 필터 (엑셀 필터처럼)
+  const [adminSearch, setAdminSearch] = useState(''); // 이름 검색
 
   // ===== 결과를 이미지로 저장 =====
   const resultsCaptureRef = useRef(null);
@@ -2153,6 +2155,8 @@ export default function App() {
       const rows = (data.rows || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
       setAdminRows(rows);
       setAdminDetailIdx(null);
+      setAdminFilterTestId('all');
+      setAdminSearch('');
     } catch {
       setAdminError('비밀번호가 틀렸거나 오류가 발생했어요.');
       setAdminRows(null);
@@ -2161,9 +2165,10 @@ export default function App() {
     }
   }
 
-  function exportAdminCSV() {
-    if (!adminRows) return;
-    const rows = adminRows.map((r) => {
+  function exportAdminCSV(rowsToExport) {
+    const source = rowsToExport ?? adminRows;
+    if (!source) return;
+    const rows = source.map((r) => {
       const row = {
         시간: new Date(r.timestamp).toLocaleString('ko-KR'),
         검사명: r.testName,
@@ -2622,45 +2627,84 @@ export default function App() {
                 </div>
               )}
 
-              {adminRows && adminDetailIdx === null && (
-                <div className="text-left">
-                  <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-base font-bold font-headline" style={{ color: C.ink }}>전체 검사 결과</h2>
-                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded" style={{ background: C.paperDim, color: C.inkDim }}>{adminRows.length}건</span>
-                  </div>
-                  <button onClick={exportAdminCSV} disabled={!adminRows.length} className="w-full mb-4 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 shadow-sm" style={{ background: C.ink, color: '#FFF' }}>
-                    <Download size={15} /> CSV 다운로드
-                  </button>
+              {adminRows && adminDetailIdx === null && (() => {
+                const testCounts = {};
+                adminRows.forEach((r) => { testCounts[r.testId] = (testCounts[r.testId] || 0) + 1; });
+                const testOptions = TESTS.filter((t) => testCounts[t.id]).map((t) => ({ id: t.id, name: t.name, count: testCounts[t.id] }));
+                const searchTerm = adminSearch.trim();
+                const filtered = adminRows
+                  .map((r, idx) => ({ r, idx }))
+                  .filter(({ r }) => (adminFilterTestId === 'all' || r.testId === adminFilterTestId) && (!searchTerm || r.name.includes(searchTerm)));
+                const isFiltered = adminFilterTestId !== 'all' || !!searchTerm;
 
-                  {adminRows.length > 0 && (
-                    <div className="overflow-x-auto -mx-4 px-4">
-                      <table className="text-xs font-mono border-collapse w-full" style={{ minWidth: 560 }}>
-                        <thead>
-                          <tr className="border-b" style={{ borderColor: C.line }}>
-                            {['시간', '검사명', '이름', '휴대폰뒷자리', '소속', '종목', ''].map((h) => (
-                              <th key={h} className="text-left py-2.5 pr-3 font-bold whitespace-nowrap" style={{ color: C.inkDim }}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {adminRows.map((r, i) => (
-                            <tr key={i} className="border-b cursor-pointer" style={{ borderColor: C.line }} onClick={() => setAdminDetailIdx(i)}>
-                              <td className="py-2.5 pr-3 whitespace-nowrap font-medium" style={{ color: C.ink }}>{new Date(r.timestamp).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
-                              <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.testName}</td>
-                              <td className="py-2.5 pr-3 whitespace-nowrap font-bold" style={{ color: C.ink }}>{r.name}</td>
-                              <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.phone4}</td>
-                              <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.org}</td>
-                              <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.sport}</td>
-                              <td className="py-2.5 pr-3"><ChevronRight size={14} style={{ color: C.inkDim }} /></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                return (
+                  <div className="text-left">
+                    <div className="flex items-center justify-between mb-3">
+                      <h2 className="text-base font-bold font-headline" style={{ color: C.ink }}>전체 검사 결과</h2>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded" style={{ background: C.paperDim, color: C.inkDim }}>
+                        {isFiltered ? `${filtered.length} / ${adminRows.length}건` : `${adminRows.length}건`}
+                      </span>
                     </div>
-                  )}
-                  {adminRows.length === 0 && <p className="text-xs" style={{ color: C.inkDim }}>아직 저장된 응답이 없어요.</p>}
-                </div>
-              )}
+
+                    <div className="flex gap-2 mb-3">
+                      <div className="relative flex-1">
+                        <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: C.inkDim }} />
+                        <input
+                          value={adminSearch}
+                          onChange={(e) => setAdminSearch(e.target.value)}
+                          placeholder="이름 검색"
+                          className="w-full pl-8 pr-3 py-2.5 rounded-xl border text-xs font-bold"
+                          style={{ borderColor: C.line, background: C.card, color: C.ink }}
+                        />
+                      </div>
+                      <select
+                        value={adminFilterTestId}
+                        onChange={(e) => setAdminFilterTestId(e.target.value)}
+                        className="py-2.5 px-3 rounded-xl border text-xs font-bold"
+                        style={{ borderColor: C.line, background: C.card, color: C.ink, maxWidth: 180 }}
+                      >
+                        <option value="all">전체 검사 ({adminRows.length})</option>
+                        {testOptions.map((t) => (
+                          <option key={t.id} value={t.id}>{t.name} ({t.count})</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <button onClick={() => exportAdminCSV(filtered.map(({ r }) => r))} disabled={!filtered.length} className="w-full mb-4 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 shadow-sm" style={{ background: C.ink, color: '#FFF' }}>
+                      <Download size={15} /> {isFiltered ? `CSV 다운로드 (필터링된 ${filtered.length}건)` : 'CSV 다운로드'}
+                    </button>
+
+                    {filtered.length > 0 && (
+                      <div className="overflow-x-auto -mx-4 px-4">
+                        <table className="text-xs font-mono border-collapse w-full" style={{ minWidth: 560 }}>
+                          <thead>
+                            <tr className="border-b" style={{ borderColor: C.line }}>
+                              {['시간', '검사명', '이름', '휴대폰뒷자리', '소속', '종목', ''].map((h) => (
+                                <th key={h} className="text-left py-2.5 pr-3 font-bold whitespace-nowrap" style={{ color: C.inkDim }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filtered.map(({ r, idx }) => (
+                              <tr key={idx} className="border-b cursor-pointer" style={{ borderColor: C.line }} onClick={() => setAdminDetailIdx(idx)}>
+                                <td className="py-2.5 pr-3 whitespace-nowrap font-medium" style={{ color: C.ink }}>{new Date(r.timestamp).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+                                <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.testName}</td>
+                                <td className="py-2.5 pr-3 whitespace-nowrap font-bold" style={{ color: C.ink }}>{r.name}</td>
+                                <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.phone4}</td>
+                                <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.org}</td>
+                                <td className="py-2.5 pr-3 whitespace-nowrap" style={{ color: C.inkDim }}>{r.sport}</td>
+                                <td className="py-2.5 pr-3"><ChevronRight size={14} style={{ color: C.inkDim }} /></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    {adminRows.length === 0 && <p className="text-xs" style={{ color: C.inkDim }}>아직 저장된 응답이 없어요.</p>}
+                    {adminRows.length > 0 && filtered.length === 0 && <p className="text-xs" style={{ color: C.inkDim }}>조건에 맞는 결과가 없어요.</p>}
+                  </div>
+                );
+              })()}
 
               {adminRows && adminDetailIdx !== null && (
                 <div>
