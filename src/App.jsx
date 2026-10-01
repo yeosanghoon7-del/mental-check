@@ -20,7 +20,7 @@ const C = {
 /* ============ Google Sheets 연동 설정 ============ */
 // Apps Script를 웹앱으로 배포한 뒤 나오는 URL을 여기에 붙여넣으면 클라우드 저장/조회가 활성화됩니다.
 // 비어있으면 기존처럼 이 기기의 localStorage에만 저장됩니다.
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzm-viLiL-b1ifpdHl703OgPJ4Q9EwNKd7NREUCrtve0bT1164lzqKuH14lMf1L8h9X/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwS_pNEaRx1Si5LMHNCH5ux9g5NaJM0TZhy85V8phBRwv_6cGXFPlrD_vC-ITGfe7Ql/exec';
 
 /* ============ 상담 신청 연결 ============ */
 const CONSULT_URL = 'https://www.instagram.com/k_s_p_c_i/';
