@@ -174,9 +174,34 @@ function handleRenameField_(body) {
   return jsonOut_({ ok: true, changed });
 }
 
+// 입력창 자동완성용 후보 목록. 비밀번호 없이 누구나 호출하므로 이름·번호 등 개인정보는 절대 담지 않고,
+// 소속/종목 문자열 중 2명 이상이 쓴 것만(= 한 사람만 적은 이상한 값·개인 메모는 제외) 많이 쓴 순으로 돌려준다.
+// 시트 전체를 읽는 작업이라 결과를 10분간 캐시해 둔다.
+function handleSuggest_() {
+  const cache = CacheService.getScriptCache();
+  const hit = cache.get('suggest_v1');
+  if (hit) return ContentService.createTextOutput(hit).setMimeType(ContentService.MimeType.JSON);
+
+  const tally = { org: {}, sport: {} };
+  readAllRows_().forEach((r) => {
+    ['org', 'sport'].forEach((f) => {
+      const v = String(r[f] || '').trim();
+      if (v && v.length <= 30) tally[f][v] = (tally[f][v] || 0) + 1;
+    });
+  });
+  const top = (m) => Object.keys(m)
+    .filter((k) => m[k] >= 2)
+    .sort((a, b) => m[b] - m[a])
+    .slice(0, 80);
+  const out = JSON.stringify({ ok: true, org: top(tally.org), sport: top(tally.sport) });
+  try { cache.put('suggest_v1', out, 600); } catch (err) { /* 캐시 실패는 무시 */ }
+  return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.JSON);
+}
+
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
+    if (body.action === 'suggest') return handleSuggest_();
     if (body.action === 'submit') return handleSubmit_(body);
     if (body.action === 'lookup') return handleLookup_(body);
     if (body.action === 'admin') return handleAdmin_(body);

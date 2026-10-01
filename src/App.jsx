@@ -1503,7 +1503,9 @@ async function syncToSheet(entry, attempt = 1) {
 }
 
 /* ================= UI Components ================= */
-function Field({ label, value, onChange, placeholder, type = 'text' }) {
+function Field({ label, value, onChange, placeholder, type = 'text', suggestions }) {
+  // suggestions가 있으면 브라우저 기본 자동완성 목록(datalist)을 붙인다. 목록에 없는 값도 그대로 입력할 수 있다.
+  const listId = suggestions?.length ? `dl-${label.replace(/\s/g, '')}` : undefined;
   return (
     <div className="mb-4">
       <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-center" style={{ color: C.ink }}>
@@ -1514,9 +1516,15 @@ function Field({ label, value, onChange, placeholder, type = 'text' }) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        list={listId}
         className="w-full px-3.5 py-3 rounded-xl border outline-none text-sm font-medium transition-all text-center focus:ring-2"
         style={{ borderColor: C.line, background: C.card, color: C.ink }}
       />
+      {listId && (
+        <datalist id={listId}>
+          {suggestions.map((s) => <option key={s} value={s} />)}
+        </datalist>
+      )}
     </div>
   );
 }
@@ -1991,6 +1999,17 @@ export default function App() {
   const [adminCleanBusy, setAdminCleanBusy] = useState(false);
   const [adminCleanError, setAdminCleanError] = useState('');
   const [adminCleanDone, setAdminCleanDone] = useState('');
+
+  // 소속/종목 자동완성 후보 — 검사 문항을 푸는 동안 미리 받아두고, 실패해도 입력은 평소처럼 가능
+  const [suggestions, setSuggestions] = useState({ org: [], sport: [] });
+  const suggestionsRequested = useRef(false);
+  useEffect(() => {
+    if ((screen !== 'quiz' && screen !== 'athleteInfo') || suggestionsRequested.current) return;
+    suggestionsRequested.current = true;
+    callScript({ action: 'suggest' })
+      .then((d) => setSuggestions({ org: d.org || [], sport: d.sport || [] }))
+      .catch(() => { suggestionsRequested.current = false; });
+  }, [screen]);
 
   // 필터/검색/정렬이 바뀌면 페이지네이션을 처음으로 되돌린다
   useEffect(() => {
@@ -2737,8 +2756,8 @@ export default function App() {
                 <h2 className="text-sm font-bold mb-4 pb-2 border-b text-center font-headline" style={{ color: C.ink, borderColor: C.line }}>피검사자 정보 입력</h2>
                 <Field label="이름" value={athlete.name} onChange={(v) => setAthlete((a) => ({ ...a, name: v }))} placeholder="예: 홍길동" />
                 <Field label="휴대폰 번호 뒷자리 4자리" type="tel" value={athlete.phone4} onChange={(v) => setAthlete((a) => ({ ...a, phone4: sanitizePhone4(v) }))} placeholder="예: 1234" />
-                <Field label="소속 팀 / 학과" value={athlete.org} onChange={(v) => setAthlete((a) => ({ ...a, org: v }))} placeholder="예: OO대학교 / OO팀" />
-                <Field label="운동 종목" value={athlete.sport} onChange={(v) => setAthlete((a) => ({ ...a, sport: v }))} placeholder="예: 축구, 태권도 등" />
+                <Field label="소속 팀 / 학과" value={athlete.org} onChange={(v) => setAthlete((a) => ({ ...a, org: v }))} placeholder="예: OO대학교 / OO팀" suggestions={suggestions.org} />
+                <Field label="운동 종목" value={athlete.sport} onChange={(v) => setAthlete((a) => ({ ...a, sport: v }))} placeholder="예: 축구, 태권도 등" suggestions={suggestions.sport} />
               </div>
               <p className="text-xs leading-relaxed px-2" style={{ color: C.inkDim }}>이름·휴대폰 번호 뒷자리는 나중에 본인 결과를 다시 조회할 때 필요해요.</p>
             </div>
