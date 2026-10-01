@@ -56,7 +56,9 @@ function readRowsFromSheet_(sheet) {
     headers.forEach((h, i) => { obj[h] = row[i]; });
     obj.phone4 = normalizePhone4_(obj.phone4);
     return obj;
-  });
+    // 두 명이 동시에 처음 제출하면 탭 머리글이 데이터 행으로 한 번 더 들어가는 경우가 있다.
+    // id 칸이 머리글 이름("id") 그대로인 줄은 결과가 아니므로 조회·관리자·자동완성에서 빼준다.
+  }).filter((obj) => String(obj.id).trim() !== 'id');
 }
 
 // 모든 검사 탭을 훑어 하나의 배열로 합친다. lookup/admin은 검사 종류를 가리지 않고 조회하므로 필요하다.

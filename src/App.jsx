@@ -2217,7 +2217,7 @@ export default function App() {
     setShowProfile(false);
     try {
       const data = await callScript({ action: 'lookup', name: lookupName.trim(), phone4: lookupPhone4 });
-      const rows = (data.rows || []).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      const rows = (data.rows || []).filter((r) => String(r.id).trim() !== 'id').sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
       if (!rows.length) setLookupError('일치하는 결과가 없어요. 이름/휴대폰 번호 뒷자리를 확인해주세요.');
       setLookupRows(rows);
     } catch (e) {
@@ -2237,7 +2237,8 @@ export default function App() {
     setAdminError('');
     try {
       const data = await callScript({ action: 'admin', password: adminPassword });
-      const rows = (data.rows || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      // 시트 머리글이 데이터 행으로 중복 들어간 줄(id 칸이 "id")은 결과가 아니므로 제외
+      const rows = (data.rows || []).filter((r) => String(r.id).trim() !== 'id').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
       setAdminRows(rows);
       setAdminDetailIdx(null);
       setAdminFilterTestId('all');
