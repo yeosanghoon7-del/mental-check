@@ -1982,6 +1982,15 @@ export default function App() {
   const [adminVisibleCount, setAdminVisibleCount] = useState(50); // 페이지네이션("더 보기")
   const [adminProfileTarget, setAdminProfileTarget] = useState(null); // { name, phone4 } — 선수별 통합 프로파일 보기
   const adminLoadMoreRef = useRef(null);
+  // 소속/종목 표기 정리 도구 — 제각각 적힌 값을 하나로 합쳐 시트에 일괄 반영
+  const [adminCleanOpen, setAdminCleanOpen] = useState(false);
+  const [adminCleanField, setAdminCleanField] = useState('org'); // 'org' | 'sport'
+  const [adminCleanSelected, setAdminCleanSelected] = useState([]);
+  const [adminCleanTarget, setAdminCleanTarget] = useState('');
+  const [adminCleanQuery, setAdminCleanQuery] = useState('');
+  const [adminCleanBusy, setAdminCleanBusy] = useState(false);
+  const [adminCleanError, setAdminCleanError] = useState('');
+  const [adminCleanDone, setAdminCleanDone] = useState('');
 
   // 필터/검색/정렬이 바뀌면 페이지네이션을 처음으로 되돌린다
   useEffect(() => {
@@ -2264,6 +2273,78 @@ export default function App() {
     }
   }
 
+  // ----- 소속/종목 정리 -----
+  // 띄어쓰기·대소문자·기호만 다른 표기는 같은 곳으로 보고 추천 묶음으로 보여준다.
+  const cleanKey = (v) => String(v).toLowerCase().replace(/[\s.,·\-_()]/g, '');
+
+  function cleanCounts(field) {
+    const m = {};
+    (adminRows || []).forEach((r) => {
+      const k = String(r[field] ?? '').trim();
+      if (k) m[k] = (m[k] || 0) + 1;
+    });
+    return m;
+  }
+
+  function openAdminClean() {
+    setAdminCleanSelected([]);
+    setAdminCleanTarget('');
+    setAdminCleanQuery('');
+    setAdminCleanError('');
+    setAdminCleanDone('');
+    setAdminCleanOpen(true);
+  }
+
+  function switchCleanField(field) {
+    setAdminCleanField(field);
+    setAdminCleanSelected([]);
+    setAdminCleanTarget('');
+    setAdminCleanQuery('');
+    setAdminCleanError('');
+    setAdminCleanDone('');
+  }
+
+  // 고른 값 중 가장 많이 쓰인 표기를 합칠 이름의 기본값으로 제안
+  function selectCleanValues(values, counts) {
+    setAdminCleanSelected(values);
+    setAdminCleanError('');
+    setAdminCleanDone('');
+    if (values.length) {
+      setAdminCleanTarget([...values].sort((a, b) => (counts[b] || 0) - (counts[a] || 0))[0]);
+    }
+  }
+
+  // 시트의 해당 칸을 직접 고치는 되돌릴 수 없는 작업이라, 확인 문구를 보여준 뒤 버튼을 눌러야만 실행된다.
+  async function applyAdminClean() {
+    const to = adminCleanTarget.trim();
+    if (!adminCleanSelected.length || !to) return;
+    setAdminCleanBusy(true);
+    setAdminCleanError('');
+    setAdminCleanDone('');
+    try {
+      await callScript({ action: 'renameField', password: adminPassword, field: adminCleanField, from: adminCleanSelected, to });
+      const fromSet = new Set(adminCleanSelected);
+      setAdminRows((rows) =>
+        rows.map((r) => (fromSet.has(String(r[adminCleanField] ?? '').trim()) ? { ...r, [adminCleanField]: to } : r))
+      );
+      if (adminCleanField === 'org') setAdminFilterOrg('all');
+      else setAdminFilterSport('all');
+      // data.changed는 이미 같은 표기였던 칸을 뺀 실제 수정 칸 수라, 사용자에게는 통일된 전체 건수를 보여준다.
+      const unified = (adminRows || []).filter((r) => fromSet.has(String(r[adminCleanField] ?? '').trim())).length;
+      setAdminCleanDone(`${unified}건이 "${to}"(으)로 통일됐어요.`);
+      setAdminCleanSelected([]);
+      setAdminCleanTarget('');
+    } catch (e) {
+      setAdminCleanError(
+        e.message === 'unknown action'
+          ? '구글 Apps Script에 새 코드가 아직 배포되지 않았어요. Code.gs를 붙여넣고 새 버전으로 배포해주세요.'
+          : e.message || '정리 중 오류가 발생했어요.'
+      );
+    } finally {
+      setAdminCleanBusy(false);
+    }
+  }
+
   async function saveAsImage(ref, filename) {
     if (!ref.current || savingImage) return;
     setSavingImage(true);
@@ -2467,6 +2548,125 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {adminCleanOpen && adminRows && (() => {
+          const fieldLabel = adminCleanField === 'org' ? '소속' : '종목';
+          const counts = cleanCounts(adminCleanField);
+          const values = Object.keys(counts).sort((a, b) => a.localeCompare(b, 'ko'));
+          const q = adminCleanQuery.trim().toLowerCase();
+          const shown = q ? values.filter((v) => v.toLowerCase().includes(q)) : values;
+          const selectedSet = new Set(adminCleanSelected);
+
+          // 표기만 조금씩 다른 값들의 추천 묶음 (2개 이상 모인 것만)
+          const groupMap = {};
+          values.forEach((v) => { (groupMap[cleanKey(v)] = groupMap[cleanKey(v)] || []).push(v); });
+          const groups = Object.values(groupMap).filter((g) => g.length > 1);
+
+          const selectedTotal = adminCleanSelected.reduce((n, v) => n + (counts[v] || 0), 0);
+          const target = adminCleanTarget.trim();
+          const canApply = adminCleanSelected.length > 0 && !!target && !adminCleanBusy;
+          const toggle = (v) =>
+            selectCleanValues(selectedSet.has(v) ? adminCleanSelected.filter((x) => x !== v) : [...adminCleanSelected, v], counts);
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => !adminCleanBusy && setAdminCleanOpen(false)}>
+              <div className="w-full max-w-md rounded-2xl shadow-lg flex flex-col text-left" style={{ background: C.card, maxHeight: '88vh' }} onClick={(e) => e.stopPropagation()}>
+                <div className="px-5 pt-5 pb-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base font-bold font-headline" style={{ color: C.ink }}>소속·종목 표기 정리</h3>
+                    <button onClick={() => !adminCleanBusy && setAdminCleanOpen(false)} aria-label="닫기"><X size={18} style={{ color: C.inkDim }} /></button>
+                  </div>
+                  <div className="flex gap-2 mb-3">
+                    {[['org', '소속'], ['sport', '종목']].map(([f, label]) => (
+                      <button
+                        key={f}
+                        onClick={() => switchCleanField(f)}
+                        disabled={adminCleanBusy}
+                        className="flex-1 py-2 rounded-xl text-xs font-bold border"
+                        style={adminCleanField === f ? { background: C.ink, color: '#FFF', borderColor: C.ink } : { background: C.card, color: C.inkDim, borderColor: C.line }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs leading-relaxed" style={{ color: C.inkDim }}>
+                    같은 뜻인데 다르게 적힌 {fieldLabel}을 체크하고, 통일할 이름을 정하면 구글시트의 모든 검사 기록에 한 번에 반영돼요.
+                  </p>
+                </div>
+
+                <div className="px-5 overflow-y-auto flex-1 pb-2">
+                  {groups.length > 0 && !q && (
+                    <div className="mb-3">
+                      <p className="text-xs font-bold mb-1.5" style={{ color: C.ink }}>비슷한 표기 추천 ({groups.length})</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {groups.map((g) => (
+                          <button
+                            key={g.join('|')}
+                            onClick={() => selectCleanValues(g, counts)}
+                            className="px-2.5 py-1.5 rounded-lg text-xs font-bold border"
+                            style={{ borderColor: C.accent, color: C.accent, background: 'var(--accent-tint)' }}
+                          >
+                            {g.join(' · ')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="relative mb-2">
+                    <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: C.inkDim }} />
+                    <input
+                      value={adminCleanQuery}
+                      onChange={(e) => setAdminCleanQuery(e.target.value)}
+                      placeholder={`${fieldLabel} 검색 (예: 계명)`}
+                      className="w-full pl-8 pr-3 py-2.5 rounded-xl border text-xs font-bold"
+                      style={{ borderColor: C.line, background: C.card, color: C.ink }}
+                    />
+                  </div>
+                  <p className="text-xs mb-1.5" style={{ color: C.inkDim }}>
+                    {values.length}가지 표기{q ? ` 중 ${shown.length}개` : ''} · 체크 {adminCleanSelected.length}개
+                  </p>
+                  <div className="rounded-xl border mb-3" style={{ borderColor: C.line }}>
+                    {shown.length === 0 && <p className="text-xs p-3" style={{ color: C.inkDim }}>찾는 {fieldLabel}이 없어요.</p>}
+                    {shown.map((v) => (
+                      <label key={v} className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer border-b last:border-b-0" style={{ borderColor: C.line, background: selectedSet.has(v) ? 'var(--accent-tint)' : 'transparent' }}>
+                        <input type="checkbox" checked={selectedSet.has(v)} onChange={() => toggle(v)} />
+                        <span className="flex-1 font-bold" style={{ color: C.ink, wordBreak: 'break-all' }}>{v}</span>
+                        <span className="font-mono" style={{ color: C.inkDim }}>{counts[v]}건</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="px-5 pt-3 pb-5 border-t" style={{ borderColor: C.line }}>
+                  <label className="text-xs font-bold block mb-1.5" style={{ color: C.ink }}>통일할 이름</label>
+                  <input
+                    value={adminCleanTarget}
+                    onChange={(e) => setAdminCleanTarget(e.target.value)}
+                    placeholder="체크하면 가장 많이 쓴 표기가 자동으로 들어가요"
+                    className="w-full px-3 py-2.5 rounded-xl border text-xs font-bold mb-2"
+                    style={{ borderColor: C.line, background: C.card, color: C.ink }}
+                  />
+                  {adminCleanSelected.length > 0 && target && (
+                    <p className="text-xs leading-relaxed mb-2" style={{ color: C.inkDim }}>
+                      체크한 {adminCleanSelected.length}가지, 총 {selectedTotal}건이 모두 "<b style={{ color: C.ink }}>{target}</b>"(으)로 바뀌어요. 되돌릴 수 없으니 구글시트를 복사해 백업해두면 안전해요.
+                    </p>
+                  )}
+                  {adminCleanError && <p className="text-xs font-bold mb-2" style={{ color: C.warn }}>{adminCleanError}</p>}
+                  {adminCleanDone && <p className="text-xs font-bold mb-2" style={{ color: C.accent2 }}>{adminCleanDone}</p>}
+                  <button
+                    onClick={applyAdminClean}
+                    disabled={!canApply}
+                    className="w-full py-3 rounded-xl text-xs font-bold disabled:opacity-40"
+                    style={{ background: C.accent, color: '#FFF' }}
+                  >
+                    {adminCleanBusy ? '시트에 반영 중...' : `${selectedTotal}건을 이 이름으로 합치기`}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         <div className="pb-28 flex-1">
           {screen === 'intro' && (
@@ -2833,9 +3033,14 @@ export default function App() {
                       </select>
                     </div>
 
-                    <button onClick={() => exportAdminCSV(sorted.map(({ r }) => r))} disabled={!sorted.length} className="w-full mb-4 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 shadow-sm" style={{ background: C.ink, color: '#FFF' }}>
-                      <Download size={15} /> {isFiltered ? `CSV 다운로드 (필터링된 ${filtered.length}건)` : 'CSV 다운로드'}
-                    </button>
+                    <div className="flex gap-2 mb-4">
+                      <button onClick={() => exportAdminCSV(sorted.map(({ r }) => r))} disabled={!sorted.length} className="flex-1 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 shadow-sm" style={{ background: C.ink, color: '#FFF' }}>
+                        <Download size={15} /> {isFiltered ? `CSV 다운로드 (필터링된 ${filtered.length}건)` : 'CSV 다운로드'}
+                      </button>
+                      <button onClick={openAdminClean} className="flex-shrink-0 px-4 py-3 rounded-xl text-xs font-bold border shadow-sm" style={{ borderColor: C.line, background: C.card, color: C.ink }}>
+                        소속·종목 정리
+                      </button>
+                    </div>
 
                     {visible.length > 0 && (
                       <div className="relative">

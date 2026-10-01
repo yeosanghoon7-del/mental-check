@@ -133,6 +133,47 @@ function handleDelete_(body) {
   return jsonOut_({ ok: false, error: 'not found' });
 }
 
+// 학생들이 제각각 적은 소속/종목 표기를 하나로 합친다.
+// field는 'org' | 'sport'만 허용하고, from에 든 값(앞뒤 공백 무시)이 있는 칸만 to로 바꾼다.
+// 다른 컬럼(점수·응답 원본 등)은 건드리지 않는다. 시트마다 해당 컬럼 한 줄을 통째로 읽어 한 번에 다시 쓴다.
+function handleRenameField_(body) {
+  const pw = PropertiesService.getScriptProperties().getProperty(ADMIN_PASSWORD_PROP);
+  if (!pw || body.password !== pw) return jsonOut_({ ok: false, error: 'unauthorized' });
+
+  const field = String(body.field || '');
+  if (field !== 'org' && field !== 'sport') return jsonOut_({ ok: false, error: 'invalid field' });
+  const to = String(body.to || '').trim();
+  const from = (Array.isArray(body.from) ? body.from : []).map((v) => String(v).trim());
+  if (!to || !from.length) return jsonOut_({ ok: false, error: 'missing from/to' });
+
+  const fromSet = {};
+  from.forEach((v) => { fromSet[v] = true; });
+
+  let changed = 0;
+  SpreadsheetApp.getActiveSpreadsheet().getSheets().forEach((sheet) => {
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    if (lastRow < 2 || lastCol < 1) return;
+    const col = sheet.getRange(1, 1, 1, lastCol).getValues()[0].indexOf(field);
+    if (col === -1) return;
+
+    const range = sheet.getRange(2, col + 1, lastRow - 1, 1);
+    const values = range.getValues();
+    let dirty = false;
+    values.forEach((row) => {
+      const raw = String(row[0]);
+      if (fromSet[raw.trim()] && raw !== to) {
+        row[0] = to;
+        changed++;
+        dirty = true;
+      }
+    });
+    if (dirty) range.setValues(values);
+  });
+  SpreadsheetApp.flush();
+  return jsonOut_({ ok: true, changed });
+}
+
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
@@ -140,6 +181,7 @@ function doPost(e) {
     if (body.action === 'lookup') return handleLookup_(body);
     if (body.action === 'admin') return handleAdmin_(body);
     if (body.action === 'delete') return handleDelete_(body);
+    if (body.action === 'renameField') return handleRenameField_(body);
     return jsonOut_({ ok: false, error: 'unknown action' });
   } catch (err) {
     return jsonOut_({ ok: false, error: String(err) });
